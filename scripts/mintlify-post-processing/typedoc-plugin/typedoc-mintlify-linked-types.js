@@ -462,14 +462,29 @@ function extractPropertiesFromMarkdownFile(linkedTypeInfo, context) {
  */
 function parsePropertiesFromTypeFile(content) {
   const properties = [];
-  const lines = content.split("\n");
+  
+  // Strip YAML frontmatter if present
+  let contentWithoutFrontmatter = content;
+  if (content.startsWith("---")) {
+    const endIndex = content.indexOf("\n---", 3);
+    if (endIndex !== -1) {
+      contentWithoutFrontmatter = content.slice(endIndex + 4).trimStart();
+    }
+  }
+  
+  // Strip leading horizontal rule (***) that TypeDoc adds after frontmatter
+  if (contentWithoutFrontmatter.startsWith("***")) {
+    contentWithoutFrontmatter = contentWithoutFrontmatter.slice(3).trimStart();
+  }
+  
+  const lines = contentWithoutFrontmatter.split("\n");
 
   // Collect intro description until Properties section
   const introLines = [];
   let descriptionCaptured = false;
 
-  // Extract Indexable section if present
-  const indexSignature = parseIndexableSection(content);
+  // Extract Indexable section if present (use content without frontmatter)
+  const indexSignature = parseIndexableSection(contentWithoutFrontmatter);
 
   // Find the Properties section
   let inPropertiesSection = false;

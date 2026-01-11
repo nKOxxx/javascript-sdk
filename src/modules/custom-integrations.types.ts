@@ -9,7 +9,7 @@ export interface CustomIntegrationCallParams {
   payload?: Record<string, any>;
 
   /**
-   * Path parameters to substitute in the URL (e.g., `{ owner: "user", repo: "repo" }`).
+   * Path parameters to substitute in the URL. For example, `{ owner: "user", repo: "repo" }`.
    */
   pathParams?: Record<string, string>;
 
@@ -44,49 +44,7 @@ export interface CustomIntegrationCallResponse {
 /**
  * Module for calling custom workspace-level API integrations.
  *
- * Custom integrations allow workspace administrators to connect any external API
- * by importing an OpenAPI specification. Apps in the workspace can then call
- * these integrations using this module.
- *
- * Unlike the built-in integrations (like `Core`), custom integrations:
- * - Are defined per-workspace by importing OpenAPI specs
- * - Use a slug-based identifier instead of package names
- * - Proxy requests through Base44's backend (credentials never exposed to frontend)
- *
- * @example
- * ```typescript
- * // Call a custom CRM integration
- * const response = await base44.integrations.custom.call(
- *   "my-crm",         // integration slug (defined by workspace admin)
- *   "get:/contacts",  // endpoint: method:path format
- *   {
- *     queryParams: { limit: 10 }
- *   }
- * );
- *
- * if (response.success) {
- *   console.log("Contacts:", response.data);
- * } else {
- *   console.error("API returned error:", response.status_code);
- * }
- * ```
- *
- * @example
- * ```typescript
- * // Call with path params and request body payload
- * const response = await base44.integrations.custom.call(
- *   "github",
- *   "post:/repos/{owner}/{repo}/issues",
- *   {
- *     pathParams: { owner: "myorg", repo: "myrepo" },
- *     payload: {
- *       title: "Bug report",
- *       body: "Something is broken",
- *       labels: ["bug"]
- *     }
- *   }
- * );
- * ```
+ * Custom integrations allow workspace administrators to connect any external API by importing an OpenAPI specification. Apps in the workspace can then call these integrations using this module.
  */
 export interface CustomIntegrationsModule {
   /**
@@ -102,6 +60,36 @@ export interface CustomIntegrationsModule {
    * @throws {Base44Error} If the integration or operation is not found (404).
    * @throws {Base44Error} If the external API call fails (502).
    * @throws {Base44Error} If the request times out (504).
+   *
+   * @example
+   * ```typescript
+   * // Call a custom CRM integration
+   * const response = await base44.integrations.custom.call(
+   *   "my-crm",
+   *   "get:/contacts",
+   *   { queryParams: { limit: 10 } }
+   * );
+   *
+   * if (response.success) {
+   *   console.log("Contacts:", response.data);
+   * }
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Call with path params and request body
+   * const response = await base44.integrations.custom.call(
+   *   "github",
+   *   "post:/repos/{owner}/{repo}/issues",
+   *   {
+   *     pathParams: { owner: "myorg", repo: "myrepo" },
+   *     payload: {
+   *       title: "Bug report",
+   *       body: "Something is broken"
+   *     }
+   *   }
+   * );
+   * ```
    */
   call(
     slug: string,
