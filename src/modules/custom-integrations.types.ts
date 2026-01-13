@@ -42,7 +42,7 @@ export interface CustomIntegrationCallResponse {
 }
 
 /**
- * Module for calling custom workspace-level API integrations.
+ * Module for calling custom pre-configured API integrations.
  *
  * Custom integrations allow workspace administrators to connect any external API by importing an OpenAPI specification. Apps in the workspace can then call these integrations using this module.
  */
