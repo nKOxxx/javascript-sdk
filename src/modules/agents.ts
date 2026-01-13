@@ -17,6 +17,9 @@ export function createAgentsModule({
 }: AgentsModuleConfig): AgentsModule {
   const baseURL = `/apps/${appId}/agents`;
 
+  // Track active conversations
+  const currentConversations: Record<string, AgentConversation | undefined> = {};
+
   const getConversations = () => {
     return axios.get<any, AgentConversation[]>(`${baseURL}/conversations`);
   };
@@ -45,7 +48,7 @@ export function createAgentsModule({
     message: AgentMessage
   ) => {
     return axios.post<any, AgentMessage>(
-      `${baseURL}/conversations/${conversation.id}/messages?api_version=v2`,
+      `${baseURL}/conversations/v2/${conversation.id}/messages`,
       message
     );
   };
@@ -58,9 +61,8 @@ export function createAgentsModule({
     const socket = getSocket();
 
     // Store the promise for initial conversation state
-    let currentConversation: AgentConversation | undefined;
     const conversationPromise = getConversation(conversationId).then((conv) => {
-      currentConversation = conv;
+      currentConversations[conversationId] = conv;
       return conv;
     });
 
@@ -74,7 +76,8 @@ export function createAgentsModule({
           await conversationPromise;
           const message = data._message as AgentMessage;
 
-          // Update local conversation state
+          // Update shared conversation state
+          const currentConversation = currentConversations[conversationId];
           if (currentConversation) {
             const messages = currentConversation.messages || [];
             const existingIndex = messages.findIndex((m) => m.id === message.id);
@@ -84,11 +87,11 @@ export function createAgentsModule({
                 ? messages.map((m, i) => (i === existingIndex ? message : m))
                 : [...messages, message];
 
-            currentConversation = {
+            currentConversations[conversationId] = {
               ...currentConversation,
               messages: updatedMessages,
             };
-            onUpdate?.(currentConversation);
+            onUpdate?.(currentConversations[conversationId]!);
           }
         }
       },
