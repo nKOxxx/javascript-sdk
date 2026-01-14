@@ -17,6 +17,9 @@ export function createAgentsModule({
 }: AgentsModuleConfig): AgentsModule {
   const baseURL = `/apps/${appId}/agents`;
 
+  // Track active conversations
+  const currentConversations: Record<string, AgentConversation | undefined> = {};
+
   const getConversations = () => {
     return axios.get<any, AgentConversation[]>(`${baseURL}/conversations`);
   };
@@ -44,14 +47,8 @@ export function createAgentsModule({
     conversation: AgentConversation,
     message: AgentMessage
   ) => {
-    const room = `/agent-conversations/${conversation.id}`;
-    const socket = getSocket();
-    await socket.updateModel(room, {
-      ...conversation,
-      messages: [...(conversation.messages || []), message],
-    });
     return axios.post<any, AgentMessage>(
-      `${baseURL}/conversations/${conversation.id}/messages`,
+      `${baseURL}/conversations/v2/${conversation.id}/messages`,
       message
     );
   };
@@ -62,11 +59,41 @@ export function createAgentsModule({
   ) => {
     const room = `/agent-conversations/${conversationId}`;
     const socket = getSocket();
+
+    // Store the promise for initial conversation state
+    const conversationPromise = getConversation(conversationId).then((conv) => {
+      currentConversations[conversationId] = conv;
+      return conv;
+    });
+
     return socket.subscribeToRoom(room, {
       connect: () => {},
-      update_model: ({ data: jsonStr }) => {
-        const conv = JSON.parse(jsonStr) as AgentConversation;
-        onUpdate?.(conv);
+      update_model: async ({ data: jsonStr }) => {
+        const data = JSON.parse(jsonStr);
+
+        if (data._message) {
+          // Wait for initial conversation to be loaded
+          await conversationPromise;
+          const message = data._message as AgentMessage;
+
+          // Update shared conversation state
+          const currentConversation = currentConversations[conversationId];
+          if (currentConversation) {
+            const messages = currentConversation.messages || [];
+            const existingIndex = messages.findIndex((m) => m.id === message.id);
+
+            const updatedMessages =
+              existingIndex !== -1
+                ? messages.map((m, i) => (i === existingIndex ? message : m))
+                : [...messages, message];
+
+            currentConversations[conversationId] = {
+              ...currentConversation,
+              messages: updatedMessages,
+            };
+            onUpdate?.(currentConversations[conversationId]!);
+          }
+        }
       },
     });
   };
