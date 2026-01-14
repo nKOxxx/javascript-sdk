@@ -41,10 +41,13 @@ export interface CreateClientConfig {
   appId: string;
   /**
    * User authentication token. Used to authenticate as a specific user.
+   *
+   * Inside Base44 apps, the token is managed automatically. For external apps, use auth methods like {@linkcode AuthModule.loginViaEmailPassword | loginViaEmailPassword()} which set the token automatically.
    */
   token?: string;
   /**
-   * Service role authentication token. Use this in the backend when you need elevated permissions to access data available to the app's admin or perform admin operations. This token should be kept secret and never exposed in the app's frontend. Typically, you get this token from a request to a backend function using {@linkcode createClientFromRequest | createClientFromRequest()}.
+   * Service role authentication token. Provides elevated permissions to access data available to the app's admin. Only available in Base44-hosted backend functions. Automatically added to client's created using {@linkcode createClientFromRequest | createClientFromRequest()}.
+   * @internal
    */
   serviceToken?: string;
   /**

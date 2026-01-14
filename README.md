@@ -1,6 +1,21 @@
 # Base44 JavaScript SDK
 
-The Base44 SDK provides a JavaScript interface for building apps on the Base44 platform. When Base44 generates your app, the generated code uses the SDK to authenticate users, manage your app's data, interact with AI agents, and more. You can then use the same SDK to modify and extend your app.
+The Base44 SDK provides a JavaScript interface for building apps on the Base44 platform. 
+
+You can use it in two ways:
+
+- **Inside Base44 apps**: When Base44 generates your app, the SDK is already set up and ready to use.
+- **External apps**: Use the SDK to build your own frontend or backend that uses Base44 as a backend service.
+
+## Installation
+
+Install the SDK via npm:
+
+```bash
+npm install @base44/sdk
+```
+
+> **Note**: In Base44-generated apps, the SDK is already installed for you.
 
 ## Modules
 
@@ -12,11 +27,15 @@ The SDK provides access to Base44's functionality through the following modules:
 - **[`connectors`](https://docs.base44.com/sdk-docs/interfaces/connectors)**: Manage OAuth connections and access tokens for third-party services.
 - **[`entities`](https://docs.base44.com/sdk-docs/interfaces/entities)**: Work with your app's data entities using CRUD operations.
 - **[`functions`](https://docs.base44.com/sdk-docs/interfaces/functions)**: Execute backend functions.
-- **[`integrations`](https://docs.base44.com/sdk-docs/type-aliases/integrations)**: Pre-built server-side functions for external services.
+- **[`integrations`](https://docs.base44.com/sdk-docs/type-aliases/integrations)**: Pre-built integrations for external services.
 
-## Example
+## Quick starts
 
-Here's a quick look at working with data in the SDK, using the `entities` module to create, update, and list records. In this example, we're working with a custom `Task` entity:
+How you get started depends on your context:
+
+### Inside a Base44 app
+
+In Base44-generated apps, the client is pre-configured. Just import and use it:
 
 ```typescript
 import { base44 } from "@/api/base44Client";
@@ -37,6 +56,45 @@ await base44.entities.Task.update(newTask.id, {
 const tasks = await base44.entities.Task.list();
 ```
 
+### External apps
+
+When using Base44 as a backend for your own app, create and configure the client yourself:
+
+```typescript
+import { createClient } from '@base44/sdk';
+
+// Create a client for your Base44 app
+const base44 = createClient({
+  appId: 'your-app-id'  // Find this in the Base44 editor URL
+});
+
+// Read public data (anonymous access)
+const products = await base44.entities.Products.list();
+
+// Authenticate a user (token is automatically set)
+await base44.auth.loginViaEmailPassword('user@example.com', 'password');
+
+// Now operations use the authenticated user's permissions
+const userOrders = await base44.entities.Orders.list();
+```
+
+### Service role
+
+For backend code that needs admin-level access, use the service role. Service role is only available in Base44-hosted backend functions:
+
+```typescript
+import { createClientFromRequest } from 'npm:@base44/sdk';
+
+Deno.serve(async (req) => {
+  const base44 = createClientFromRequest(req);
+
+  // Access all data with admin-level permissions
+  const allOrders = await base44.asServiceRole.entities.Orders.list();
+
+  return Response.json({ orders: allOrders });
+});
+```
+
 ## Learn more
 
 For complete documentation, guides, and API reference, visit the **[Base44 SDK Documentation](https://docs.base44.com/sdk-getting-started/overview)**.
@@ -45,12 +103,16 @@ For complete documentation, guides, and API reference, visit the **[Base44 SDK D
 
 ### Build the SDK
 
+Build the SDK from source:
+
 ```bash
 npm install
 npm run build
 ```
 
 ### Run tests
+
+Run the test suite:
 
 ```bash
 # Run all tests
@@ -64,6 +126,7 @@ npm run test:coverage
 ```
 
 For E2E tests, create a `tests/.env` file with:
+
 ```
 BASE44_APP_ID=your_app_id
 BASE44_AUTH_TOKEN=your_auth_token
