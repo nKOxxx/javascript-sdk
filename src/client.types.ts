@@ -89,7 +89,10 @@ export interface Base44Client {
   agents: AgentsModule;
   /** {@link AppLogsModule | App logs module} for tracking app usage. */
   appLogs: AppLogsModule;
-  /** {@link AnalyticsModule | Analytics module} for tracking app usage. */
+  /**
+   * Analytics module for tracking app usage.
+   * @internal
+   */
   analytics: AnalyticsModule;
   /** Cleanup function to disconnect WebSocket connections. Call when you're done with the client. */
   cleanup: () => void;
