@@ -61,8 +61,8 @@ export interface CustomIntegrationCallResponse {
  * ```typescript
  * // Call a custom GitHub integration
  * const response = await base44.integrations.custom.call(
- *   "github",        // integration slug (defined by workspace admin)
- *   "listIssues",    // operation ID from the OpenAPI spec
+ *   "github",                              // integration slug (defined by workspace admin)
+ *   "get:/repos/{owner}/{repo}/issues",   // endpoint in method:path format
  *   {
  *     pathParams: { owner: "myorg", repo: "myrepo" },
  *     queryParams: { state: "open", per_page: 100 }
@@ -81,7 +81,7 @@ export interface CustomIntegrationCallResponse {
  * // Call with request body payload
  * const response = await base44.integrations.custom.call(
  *   "github",
- *   "createIssue",
+ *   "post:/repos/{owner}/{repo}/issues",
  *   {
  *     pathParams: { owner: "myorg", repo: "myrepo" },
  *     payload: {
@@ -98,7 +98,7 @@ export interface CustomIntegrationsModule {
    * Call a custom integration endpoint.
    *
    * @param slug - The integration's unique identifier (slug), as defined by the workspace admin.
-   * @param operationId - The operation ID from the OpenAPI spec (e.g., "listIssues", "getUser").
+   * @param operationId - The endpoint identifier in method:path format (e.g., "get:/repos/{owner}/{repo}/issues", "get:/users/{username}").
    * @param params - Optional parameters including payload, pathParams, queryParams, and headers.
    * @returns Promise resolving to the integration call response.
    *

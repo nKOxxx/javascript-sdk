@@ -26,7 +26,7 @@ describe('Custom Integrations Module', () => {
 
   test('custom.call() should convert camelCase params to snake_case for backend', async () => {
     const slug = 'github';
-    const operationId = 'listIssues';
+    const operationId = 'get:/repos/{owner}/{repo}/issues';
     
     // SDK call uses camelCase (JS convention)
     const sdkParams = {
@@ -48,9 +48,10 @@ describe('Custom Integrations Module', () => {
       data: { issues: [{ id: 1, title: 'Test Issue' }] },
     };
 
-    // Mock expects snake_case body
+    // Mock expects snake_case body (curly braces in operationId must be URL-encoded for nock matching)
+    const encodedOperationId = operationId.replace(/{/g, '%7B').replace(/}/g, '%7D');
     scope
-      .post(`/api/apps/${appId}/integrations/custom/${slug}/${operationId}`, expectedBody)
+      .post(`/api/apps/${appId}/integrations/custom/${slug}/${encodedOperationId}`, expectedBody)
       .reply(200, mockResponse);
 
     // SDK call uses camelCase
@@ -135,11 +136,12 @@ describe('Custom Integrations Module', () => {
 
   test('custom.call() should handle 502 error from external API', async () => {
     const slug = 'github';
-    const operationId = 'listIssues';
+    const operationId = 'get:/repos/{owner}/{repo}/issues';
 
-    // Mock a 502 error response (external API failure)
+    // Mock a 502 error response (external API failure) - curly braces in operationId must be URL-encoded
+    const encodedOperationId = operationId.replace(/{/g, '%7B').replace(/}/g, '%7D');
     scope
-      .post(`/api/apps/${appId}/integrations/custom/${slug}/${operationId}`, {})
+      .post(`/api/apps/${appId}/integrations/custom/${slug}/${encodedOperationId}`, {})
       .reply(502, {
         detail: 'Failed to connect to external API: Connection refused',
       });
@@ -169,13 +171,13 @@ describe('Custom Integrations Module', () => {
   });
 
   test('custom.call() should throw error when slug is empty string', async () => {
-    await expect(base44.integrations.custom.call('', 'listIssues')).rejects.toThrow(
+    await expect(base44.integrations.custom.call('', 'get:/repos/{owner}/{repo}/issues')).rejects.toThrow(
       'Integration slug is required and cannot be empty'
     );
   });
 
   test('custom.call() should throw error when slug is whitespace only', async () => {
-    await expect(base44.integrations.custom.call('   ', 'listIssues')).rejects.toThrow(
+    await expect(base44.integrations.custom.call('   ', 'get:/repos/{owner}/{repo}/issues')).rejects.toThrow(
       'Integration slug is required and cannot be empty'
     );
   });
@@ -294,7 +296,7 @@ describe('Custom Integrations Module', () => {
 
   test('custom.call() should only include defined params in body', async () => {
     const slug = 'github';
-    const operationId = 'getUser';
+    const operationId = 'get:/users/{username}';
     
     // SDK call with only pathParams
     const sdkParams = {
@@ -312,8 +314,10 @@ describe('Custom Integrations Module', () => {
       data: { login: 'octocat' },
     };
 
+    // Curly braces in operationId must be URL-encoded for nock matching
+    const encodedOperationId = operationId.replace(/{/g, '%7B').replace(/}/g, '%7D');
     scope
-      .post(`/api/apps/${appId}/integrations/custom/${slug}/${operationId}`, expectedBody)
+      .post(`/api/apps/${appId}/integrations/custom/${slug}/${encodedOperationId}`, expectedBody)
       .reply(200, mockResponse);
 
     const result = await base44.integrations.custom.call(slug, operationId, sdkParams);
