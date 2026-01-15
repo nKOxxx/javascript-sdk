@@ -248,6 +248,12 @@ function main() {
     console.log(`Copying docs to ${sdkDocsTarget}...`);
     fs.cpSync(DOCS_SOURCE_PATH, sdkDocsTarget, { recursive: true });
 
+    // Remove README.mdx - it's not used in the docs navigation
+    const readmePath = path.join(sdkDocsTarget, "README.mdx");
+    if (fs.existsSync(readmePath)) {
+      fs.rmSync(readmePath, { force: true });
+    }
+
     // Scan the sdk-docs directory
     const sdkFiles = scanSdkDocs(sdkDocsTarget);
     console.debug(`SDK files: ${JSON.stringify(sdkFiles, null, 2)}`);

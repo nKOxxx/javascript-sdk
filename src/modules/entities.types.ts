@@ -1,12 +1,10 @@
 /**
  * Event types for realtime entity updates.
- * @internal
  */
 export type RealtimeEventType = "create" | "update" | "delete";
 
 /**
  * Payload received when a realtime event occurs.
- * @internal
  */
 export interface RealtimeEvent {
   /** The type of change that occurred */
@@ -21,13 +19,11 @@ export interface RealtimeEvent {
 
 /**
  * Callback function invoked when a realtime event occurs.
- * @internal
  */
 export type RealtimeCallback = (event: RealtimeEvent) => void;
 
 /**
  * Function returned from subscribe, call it to unsubscribe.
- * @internal
  */
 export type Subscription = () => void;
 
