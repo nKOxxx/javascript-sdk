@@ -204,6 +204,7 @@ export interface AuthModule {
    * // Login with GitHub and redirect to dashboard
    * base44.auth.loginWithProvider('microsoft', '/dashboard');
    * ```
+   * @internal
    */
   loginWithProvider(provider: string, fromUrl?: string): void;
 
