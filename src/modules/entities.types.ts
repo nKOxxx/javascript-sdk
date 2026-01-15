@@ -23,11 +23,6 @@ export interface RealtimeEvent {
 export type RealtimeCallback = (event: RealtimeEvent) => void;
 
 /**
- * Function returned from subscribe, call it to unsubscribe.
- */
-export type Subscription = () => void;
-
-/**
  * Entity handler providing CRUD operations for a specific entity type.
  *
  * Each entity in the app gets a handler with these methods for managing data.
