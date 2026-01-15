@@ -25,12 +25,14 @@ export type { Base44Client, CreateClientConfig, CreateClientOptions };
  *
  * This is the main entry point for the Base44 SDK. It creates a client that provides access to the SDK's modules, such as {@linkcode EntitiesModule | entities}, {@linkcode AuthModule | auth}, and {@linkcode FunctionsModule | functions}.
  *
- * Typically, you don't need to call this function because Base44 creates the client for you. You can then import and use the client to make API calls. The client takes care of managing authentication for you.
+ * How you get a client depends on your context:
+ * - **Inside a Base44 app:** The client is automatically created and configured for you. Import it from `@/api/base44Client`.
+ * - **External app using Base44 as a backend:** Call `createClient()` directly in your code to create and configure the client.
  *
  * The client supports three authentication modes:
- * - **Anonymous**: Access modules anonymously without authentication using `base44.moduleName`. Operations are scoped to public data and permissions.
- * - **User authentication**: Access modules with user-level permissions using `base44.moduleName`. Operations are scoped to the authenticated user's data and permissions.
- * - **Service role authentication**: Access modules with elevated permissions using `base44.asServiceRole.moduleName`. Operations can access any data available to the app's admin. Can only be used in the backend. Typically, you create a client with service role authentication using the {@linkcode createClientFromRequest | createClientFromRequest()} function in your backend functions.
+ * - **Anonymous**: Access modules without authentication using `base44.moduleName`. Operations are scoped to public data and permissions.
+ * - **User authentication**: Access modules with user-level permissions using `base44.moduleName`. Operations are scoped to the authenticated user's data and permissions. Use `base44.auth.loginViaEmailPassword()` or other auth methods to get a token.
+ * - **Service role authentication**: Access modules with elevated permissions using `base44.asServiceRole.moduleName`. Operations can access any data available to the app's admin. Only available in Base44-hosted backend functions. Create a client with service role authentication using {@linkcode createClientFromRequest | createClientFromRequest()}.
  *
  * For example, when using the {@linkcode EntitiesModule | entities} module:
  * - **Anonymous**: Can only read public data.
@@ -265,7 +267,7 @@ export function createClient(config: CreateClientConfig): Base44Client {
     /**
      * Provides access to service role modules.
      *
-     * Service role authentication provides elevated permissions for server-side operations. Unlike user authentication, which is scoped to a specific user's permissions, service role authentication has access to the data and operations available to the app's admin.
+     * Service role authentication provides elevated permissions for backend operations. Unlike user authentication, which is scoped to a specific user's permissions, service role authentication has access to the data and operations available to the app's admin.
      *
      * @throws {Error} When accessed without providing a serviceToken during client creation.
      *
@@ -296,7 +298,9 @@ export function createClient(config: CreateClientConfig): Base44Client {
 /**
  * Creates a Base44 client from an HTTP request.
  *
- * The client is created by automatically extracting authentication tokens from a request to a backend function. Base44 inserts the necessary headers when forwarding requests to backend functions.
+ * This function is designed for use in Base44-hosted backend functions. For frontends and external backends, use {@linkcode createClient | createClient()} instead.
+ *
+ * When used in a Base44-hosted backend function, `createClientFromRequest()` automatically extracts authentication tokens from the request headers that Base44 injects when forwarding requests. The returned client includes service role access using `base44.asServiceRole`, which provides admin-level permissions.
  *
  * To learn more about the Base44 client, see {@linkcode createClient | createClient()}.
  *
