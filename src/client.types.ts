@@ -90,7 +90,7 @@ export interface Base44Client {
   /** {@link AppLogsModule | App logs module} for tracking app usage. */
   appLogs: AppLogsModule;
   /**
-   * Analytics module for tracking app usage.
+   * {@link AnalyticsModule | Analytics module} for tracking app usage.
    * @internal
    */
   analytics: AnalyticsModule;
