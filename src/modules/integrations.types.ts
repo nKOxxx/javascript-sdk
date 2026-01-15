@@ -383,8 +383,8 @@ export type IntegrationsModule = {
    * @example
    * ```typescript
    * const response = await base44.integrations.custom.call(
-   *   "github",        // integration slug
-   *   "listIssues",    // operation ID
+   *   "github",                              // integration slug
+   *   "get:/repos/{owner}/{repo}/issues",   // endpoint in method:path format
    *   {
    *     pathParams: { owner: "myorg", repo: "myrepo" },
    *     queryParams: { state: "open" }
