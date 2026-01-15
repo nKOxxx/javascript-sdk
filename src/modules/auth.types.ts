@@ -190,6 +190,7 @@ export interface AuthModule {
    *
    * Initiates OAuth/SSO login flow with providers like Google, Microsoft, etc. Requires a browser environment and can't be used in the backend.
    *
+   * @internal
    * @param provider - Name of the supported authentication provider (e.g., 'google', 'microsoft').
    * @param fromUrl - URL to redirect to after successful authentication. Defaults to '/'.
    *

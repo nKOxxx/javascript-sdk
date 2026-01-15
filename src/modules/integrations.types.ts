@@ -382,6 +382,8 @@ export type IntegrationsModule = {
 
   /**
    * Custom integrations module for calling pre-configured external APIs.
+   *
+   * @internal
    */
   custom: CustomIntegrationsModule;
 } & {
