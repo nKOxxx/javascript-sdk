@@ -77,23 +77,20 @@ export interface CreateClientConfig {
  * Provides access to all SDK modules for interacting with the app.
  */
 export interface Base44Client {
-  /** {@link EntitiesModule | Entities module} for CRUD operations on your data models. */
-  entities: EntitiesModule;
-  /** {@link IntegrationsModule | Integrations module} for calling pre-built integration endpoints. */
-  integrations: IntegrationsModule;
-  /** {@link AuthModule | Auth module} for user authentication and management. */
-  auth: AuthModule;
-  /** {@link FunctionsModule | Functions module} for invoking custom backend functions. */
-  functions: FunctionsModule;
   /** {@link AgentsModule | Agents module} for managing AI agent conversations. */
   agents: AgentsModule;
+  /** {@link AnalyticsModule | Analytics module} for tracking custom events in your app. */
+  analytics: AnalyticsModule;
   /** {@link AppLogsModule | App logs module} for tracking app usage. */
   appLogs: AppLogsModule;
-  /**
-   * {@link AnalyticsModule | Analytics module} for tracking app usage.
-   * @internal
-   */
-  analytics: AnalyticsModule;
+  /** {@link AuthModule | Auth module} for user authentication and management. */
+  auth: AuthModule;
+  /** {@link EntitiesModule | Entities module} for CRUD operations on your data models. */
+  entities: EntitiesModule;
+  /** {@link FunctionsModule | Functions module} for invoking custom backend functions. */
+  functions: FunctionsModule;
+  /** {@link IntegrationsModule | Integrations module} for calling pre-built integration endpoints. */
+  integrations: IntegrationsModule;
   /** Cleanup function to disconnect WebSocket connections. Call when you're done with the client. */
   cleanup: () => void;
 
@@ -120,22 +117,22 @@ export interface Base44Client {
    * @throws {Error} When accessed without providing a serviceToken during client creation
    */
   readonly asServiceRole: {
+    /** {@link AgentsModule | Agents module} with elevated permissions. */
+    agents: AgentsModule;
+    /** {@link AppLogsModule | App logs module} with elevated permissions. */
+    appLogs: AppLogsModule;
+    /** {@link ConnectorsModule | Connectors module} for OAuth token retrieval. */
+    connectors: ConnectorsModule;
     /** {@link EntitiesModule | Entities module} with elevated permissions. */
     entities: EntitiesModule;
+    /** {@link FunctionsModule | Functions module} with elevated permissions. */
+    functions: FunctionsModule;
     /** {@link IntegrationsModule | Integrations module} with elevated permissions. */
     integrations: IntegrationsModule;
     /** {@link SsoModule | SSO module} for generating SSO tokens.
      * @internal
      */
     sso: SsoModule;
-    /** {@link ConnectorsModule | Connectors module} for OAuth token retrieval. */
-    connectors: ConnectorsModule;
-    /** {@link FunctionsModule | Functions module} with elevated permissions. */
-    functions: FunctionsModule;
-    /** {@link AgentsModule | Agents module} with elevated permissions. */
-    agents: AgentsModule;
-    /** {@link AppLogsModule | App logs module} with elevated permissions. */
-    appLogs: AppLogsModule;
     /** Cleanup function to disconnect WebSocket connections. */
     cleanup: () => void;
   };

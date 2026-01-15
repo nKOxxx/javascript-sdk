@@ -35,6 +35,7 @@ const PANELS_ENABLED = process.env.MINTLIFY_INCLUDE_PANELS === "true";
 
 const MODULE_RENAMES = {
   AgentsModule: "agents",
+  AnalyticsModule: "analytics",
   AppLogsModule: "app-logs",
   AuthModule: "auth",
   ConnectorsModule: "connectors",
