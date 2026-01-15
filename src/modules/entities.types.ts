@@ -319,7 +319,6 @@ export interface EntityHandler {
    * // Later, clean up the subscription
    * unsubscribe();
    * ```
-   * @internal
    */
   subscribe(callback: RealtimeCallback): () => void;
 }
