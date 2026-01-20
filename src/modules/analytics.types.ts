@@ -79,27 +79,16 @@ export type AnalyticsModuleOptions = {
 /**
  * Analytics module for tracking custom events in your app.
  *
- * Use this module to track specific user actions that appear as custom event cards in your [Analytics dashboard](/documentation/performance-and-seo/app-analytics). Track things like button clicks, form submissions, purchases, and feature usage.
+ * Use this module to track specific user actions. Track things like button clicks, form submissions, purchases, and feature usage.
  *
- * Choose clear, descriptive event names in snake_case like `signup_button_click` or `purchase_completed` rather than generic names like `click`. Include relevant context in your properties such as identifiers like `product_id`, measurements like `price`, and flags like `is_first_purchase`.
+ * <Note> Analytics events tracked with this module appear as custom event cards in the [Analytics dashboard](/documentation/performance-and-seo/app-analytics).</Note>
+ *
+ * When tracking events:
+ *
+ * - Choose clear, descriptive event names in snake_case like `signup_button_click` or `purchase_completed` rather than generic names like `click`.
+ * - Include relevant context in your properties such as identifiers like `product_id`, measurements like `price`, and flags like `is_first_purchase`.
  *
  * This module is only available in user authentication mode (`base44.analytics`).
- *
- * ## Built-in vs Custom Analytics
- *
- * Your Analytics dashboard shows two types of data:
- *
- * **Built-in metrics:**
- * - Total visits, unique visitors, visit duration, and live visitors.
- * - Breakdown cards for country, device, operating system, and referrer.
- *
- * These begin tracking automatically when {@linkcode createClient | createClient()} is called and continue tracking until the client is cleaned up.
- *
- * **Custom events:**
- * - Each event you track with `track()` appears as its own card in the dashboard.
- * - Use these to measure specific actions that matter to your app.
- *
- * These are tracked when you call the `track()` method.
  */
 export interface AnalyticsModule {
   /**
