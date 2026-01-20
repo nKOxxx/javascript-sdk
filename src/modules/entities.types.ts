@@ -293,7 +293,6 @@ export interface EntityHandler {
    * record is created, updated, or deleted. Returns an unsubscribe function
    * to clean up the connection.
    *
-   * @internal
    * @param callback - Callback function called when an entity changes. The callback receives an event object with the following properties:
    * - `type`: The type of change that occurred - `'create'`, `'update'`, or `'delete'`.
    * - `data`: The entity data after the change.
