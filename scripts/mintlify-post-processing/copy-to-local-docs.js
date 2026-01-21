@@ -71,6 +71,9 @@ Examples:
   return { target };
 }
 
+// Target location within mintlify-docs for SDK reference docs
+const SDK_DOCS_TARGET_PATH = "developers/references/sdk/docs";
+
 function scanSdkDocs(sdkDocsDir) {
   const result = {};
 
@@ -104,7 +107,8 @@ function updateDocsJson(repoDir, sdkFiles) {
   const docsContent = fs.readFileSync(docsJsonPath, "utf8");
   const docs = JSON.parse(docsContent);
 
-  // Build the new SDK Reference groups
+  // Build the new SDK Reference groups using the new path structure
+  const basePath = SDK_DOCS_TARGET_PATH;
   const groupMap = new Map(); // group name -> pages array
 
   const addToGroup = (groupName, pages) => {
@@ -118,28 +122,28 @@ function updateDocsJson(repoDir, sdkFiles) {
   if (sdkFiles.functions?.length > 0 && categoryMap.functions) {
     addToGroup(
       categoryMap.functions,
-      sdkFiles.functions.map((file) => `sdk-docs/functions/${file}`)
+      sdkFiles.functions.map((file) => `${basePath}/functions/${file}`)
     );
   }
 
   if (sdkFiles.interfaces?.length > 0 && categoryMap.interfaces) {
     addToGroup(
       categoryMap.interfaces,
-      sdkFiles.interfaces.map((file) => `sdk-docs/interfaces/${file}`)
+      sdkFiles.interfaces.map((file) => `${basePath}/interfaces/${file}`)
     );
   }
 
   if (sdkFiles.classes?.length > 0 && categoryMap.classes) {
     addToGroup(
       categoryMap.classes,
-      sdkFiles.classes.map((file) => `sdk-docs/classes/${file}`)
+      sdkFiles.classes.map((file) => `${basePath}/classes/${file}`)
     );
   }
 
   if (sdkFiles["type-aliases"]?.length > 0 && categoryMap["type-aliases"]) {
     addToGroup(
       categoryMap["type-aliases"],
-      sdkFiles["type-aliases"].map((file) => `sdk-docs/type-aliases/${file}`)
+      sdkFiles["type-aliases"].map((file) => `${basePath}/type-aliases/${file}`)
     );
   }
 
@@ -155,7 +159,7 @@ function updateDocsJson(repoDir, sdkFiles) {
     `SDK Reference pages: ${JSON.stringify(sdkReferencePages, null, 2)}`
   );
 
-  // Navigate to: Developers tab -> SDK group -> SDK Reference group
+  // Navigate to: Developers tab -> anchors -> References anchor -> groups -> JavaScript SDK -> SDK Reference
   const developersTab = docs.navigation.tabs.find(
     (tab) => tab.tab === "Developers"
   );
@@ -165,39 +169,44 @@ function updateDocsJson(repoDir, sdkFiles) {
     process.exit(1);
   }
 
-  // Find the SDK group (it's a top-level group in the Developers tab)
-  const sdkGroup = developersTab.groups.find((g) => g.group === "SDK");
+  // Find the References anchor (new structure uses anchors instead of groups at tab level)
+  const referencesAnchor = developersTab.anchors?.find(
+    (anchor) => anchor.anchor === "References"
+  );
 
-  if (!sdkGroup) {
-    console.error("Could not find 'SDK' group in Developers tab");
+  if (!referencesAnchor) {
+    console.error("Could not find 'References' anchor in Developers tab");
     process.exit(1);
   }
 
-  // Find SDK Reference within SDK's pages (it's a nested group object)
-  const sdkRefIndex = sdkGroup.pages.findIndex(
+  // Find the JavaScript SDK group within the References anchor
+  const jsSdkGroup = referencesAnchor.groups?.find(
+    (g) => g.group === "JavaScript SDK"
+  );
+
+  if (!jsSdkGroup) {
+    console.error(
+      "Could not find 'JavaScript SDK' group in References anchor"
+    );
+    process.exit(1);
+  }
+
+  // Find SDK Reference within JavaScript SDK's pages (it's a nested group object)
+  const sdkRefIndex = jsSdkGroup.pages.findIndex(
     (page) => typeof page === "object" && page.group === "SDK Reference"
   );
 
   if (sdkRefIndex === -1) {
-    console.error("Could not find 'SDK Reference' group in SDK");
+    console.error("Could not find 'SDK Reference' group in JavaScript SDK");
     process.exit(1);
   }
 
   // Update the SDK Reference pages with our generated groups
-  sdkGroup.pages[sdkRefIndex] = {
+  jsSdkGroup.pages[sdkRefIndex] = {
     group: "SDK Reference",
     icon: "brackets-curly",
     pages: sdkReferencePages,
   };
-
-  // Remove the old standalone "SDK Reference" tab if it exists
-  const oldSdkTabIndex = docs.navigation.tabs.findIndex(
-    (tab) => tab.tab === "SDK Reference"
-  );
-  if (oldSdkTabIndex !== -1) {
-    console.log("Removing old standalone 'SDK Reference' tab...");
-    docs.navigation.tabs.splice(oldSdkTabIndex, 1);
-  }
 
   // Write updated docs.json
   console.log(`Writing updated docs.json to ${docsJsonPath}...`);
@@ -237,12 +246,15 @@ function main() {
   }
 
   try {
-    // Remove the existing sdk-docs directory
-    const sdkDocsTarget = path.join(target, "sdk-docs");
+    // Remove the existing SDK docs directory at the new location
+    const sdkDocsTarget = path.join(target, SDK_DOCS_TARGET_PATH);
     if (fs.existsSync(sdkDocsTarget)) {
-      console.log(`Removing existing sdk-docs directory...`);
+      console.log(`Removing existing SDK docs directory at ${SDK_DOCS_TARGET_PATH}...`);
       fs.rmSync(sdkDocsTarget, { recursive: true, force: true });
     }
+
+    // Ensure parent directories exist
+    fs.mkdirSync(sdkDocsTarget, { recursive: true });
 
     // Copy the docs directory to the target
     console.log(`Copying docs to ${sdkDocsTarget}...`);
@@ -261,7 +273,15 @@ function main() {
     // Update the docs.json file
     updateDocsJson(target, sdkFiles);
 
+    // Also remove the old sdk-docs location if it exists (migration cleanup)
+    const oldSdkDocsLocation = path.join(target, "sdk-docs");
+    if (fs.existsSync(oldSdkDocsLocation)) {
+      console.log(`Removing old sdk-docs directory at root level...`);
+      fs.rmSync(oldSdkDocsLocation, { recursive: true, force: true });
+    }
+
     console.log("\n✅ Successfully copied SDK docs to local mintlify-docs repo");
+    console.log(`   Target: ${SDK_DOCS_TARGET_PATH}`);
     console.log(`\nTo preview the docs, run 'mintlify dev' in ${target}`);
   } catch (e) {
     console.error(`Error: Failed to copy docs: ${e}`);
