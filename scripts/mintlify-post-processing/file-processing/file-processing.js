@@ -33,25 +33,56 @@ const APPENDED_ARTICLES_PATH = path.join(
 // Controlled via env var so we can re-enable Panel injection when needed.
 const PANELS_ENABLED = process.env.MINTLIFY_INCLUDE_PANELS === "true";
 
-const MODULE_RENAMES = {
-  AgentsModule: "agents",
-  AnalyticsModule: "analytics",
-  AppLogsModule: "app-logs",
-  AuthModule: "auth",
-  ConnectorsModule: "connectors",
-  EntitiesModule: "entities",
-  FunctionsModule: "functions",
-  IntegrationsModule: "integrations",
-  SsoModule: "sso",
-};
+/**
+ * Converts a PascalCase module name to kebab-case.
+ * E.g., "AgentsModule" -> "agents", "AppLogsModule" -> "app-logs"
+ *
+ * @param {string} name - The PascalCase name (e.g., "AgentsModule")
+ * @returns {string | null} - The kebab-case name, or null if not a module name
+ */
+function deriveModuleRename(name) {
+  if (!name.endsWith("Module")) {
+    return null;
+  }
 
-const REVERSE_MODULE_RENAMES = Object.entries(MODULE_RENAMES).reduce(
-  (acc, [k, v]) => {
-    acc[v] = k;
-    return acc;
-  },
-  {}
-);
+  // Remove "Module" suffix
+  const withoutModule = name.slice(0, -6);
+
+  // Convert PascalCase to kebab-case
+  // Insert hyphen before each capital letter (except the first), then lowercase
+  const kebabCase = withoutModule
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase();
+
+  return kebabCase;
+}
+
+/**
+ * Checks if a name is a module name (ends with "Module") and returns its renamed version.
+ * Uses the derived rename algorithm.
+ *
+ * @param {string} name - The name to check
+ * @returns {string | null} - The renamed version, or null if not a module
+ */
+function getModuleRename(name) {
+  return deriveModuleRename(name);
+}
+
+/**
+ * Checks if a name is a renamed module (kebab-case) and returns its original name.
+ *
+ * @param {string} name - The kebab-case name to check
+ * @returns {string | null} - The original PascalCase module name, or null if not found
+ */
+function getReverseModuleRename(name) {
+  // Convert kebab-case back to PascalCase and add "Module" suffix
+  const pascalCase = name
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+
+  return `${pascalCase}Module`;
+}
 
 /**
  * Get list of linked type names that should be suppressed
@@ -170,8 +201,9 @@ Access to additional integration packages.
       // If filename has extension, strip it for checking map
       const nameWithoutExt = filename.replace(/\.mdx?$/, "");
 
-      if (MODULE_RENAMES[nameWithoutExt]) {
-        pathParts[pathParts.length - 1] = MODULE_RENAMES[nameWithoutExt];
+      const moduleRename = getModuleRename(nameWithoutExt);
+      if (moduleRename) {
+        pathParts[pathParts.length - 1] = moduleRename;
         linkPath = pathParts.join("/");
       }
 
@@ -223,15 +255,22 @@ function performModuleRenames(dir) {
       let targetName = nameWithoutExt;
       let needsRename = false;
 
-      if (MODULE_RENAMES[nameWithoutExt]) {
-        targetName = MODULE_RENAMES[nameWithoutExt];
+      const moduleRename = getModuleRename(nameWithoutExt);
+      if (moduleRename) {
+        targetName = moduleRename;
         needsRename = true;
-      } else if (REVERSE_MODULE_RENAMES[nameWithoutExt]) {
-        // It's already renamed (e.g. "entities"), but we should ensure title is correct
-        targetName = nameWithoutExt;
+      } else if (nameWithoutExt.match(/^[a-z]+(-[a-z]+)*$/)) {
+        // It's already in kebab-case (e.g. "entities", "app-logs"), might be a renamed module
+        // Check if we can derive an original module name from it
+        const possibleOriginal = getReverseModuleRename(nameWithoutExt);
+        if (possibleOriginal) {
+          targetName = nameWithoutExt;
+        }
       }
 
-      if (needsRename || REVERSE_MODULE_RENAMES[targetName]) {
+      // Process if it needs renaming OR if it looks like a module file (for title updates)
+      const isModuleFile = needsRename || nameWithoutExt.match(/^[a-z]+(-[a-z]+)*$/);
+      if (isModuleFile) {
         const newPath = path.join(dir, `${targetName}.mdx`); // Always use .mdx
 
         let content = fs.readFileSync(entryPath, "utf-8");
@@ -420,12 +459,16 @@ function processAllFiles(dir, linkedTypeNames, exposedTypeNames) {
       const relativePath = path.relative(DOCS_DIR, entryPath);
       const isTypeDoc = isTypeDocPath(relativePath);
 
-      // Check if exposed. Handle renamed modules by checking reverse map.
+      // Check if exposed. Handle renamed modules by deriving the original name.
       // Use both the raw filename and any potential original name
-      const originalName = REVERSE_MODULE_RENAMES[fileName] || fileName;
+      // If the filename is kebab-case, it might be a renamed module
+      const possibleOriginalModule = fileName.match(/^[a-z]+(-[a-z]+)*$/)
+        ? getReverseModuleRename(fileName)
+        : null;
+      const originalName = possibleOriginalModule || fileName;
 
       // If it's a renamed module (e.g. "entities"), treat it as exposed if "EntitiesModule" is exposed
-      const isRenamedModule = !!REVERSE_MODULE_RENAMES[fileName];
+      const isRenamedModule = !!possibleOriginalModule;
 
       const isExposedType =
         !isTypeDoc ||
@@ -627,12 +670,13 @@ function applyAppendedArticles(appendedArticles) {
       continue;
     }
 
-    // Check if host was renamed
+    // Check if host was renamed (derives rename automatically for *Module names)
     let effectiveHostKey = hostKey;
     const pathParts = hostKey.split("/");
     const hostName = pathParts[pathParts.length - 1];
-    if (MODULE_RENAMES[hostName]) {
-      pathParts[pathParts.length - 1] = MODULE_RENAMES[hostName];
+    const hostModuleRename = getModuleRename(hostName);
+    if (hostModuleRename) {
+      pathParts[pathParts.length - 1] = hostModuleRename;
       effectiveHostKey = pathParts.join("/");
     }
 
@@ -650,12 +694,13 @@ function applyAppendedArticles(appendedArticles) {
     const collectedHeadings = PANELS_ENABLED ? [] : null;
 
     for (const appendKey of appendList) {
-      // Check if appended file was renamed (unlikely for EntityHandler but good for consistency)
+      // Check if appended file was renamed (derives rename automatically for *Module names)
       let effectiveAppendKey = appendKey;
       const appendParts = appendKey.split("/");
       const appendName = appendParts[appendParts.length - 1];
-      if (MODULE_RENAMES[appendName]) {
-        appendParts[appendParts.length - 1] = MODULE_RENAMES[appendName];
+      const appendModuleRename = getModuleRename(appendName);
+      if (appendModuleRename) {
+        appendParts[appendParts.length - 1] = appendModuleRename;
         effectiveAppendKey = appendParts.join("/");
       }
 
