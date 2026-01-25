@@ -192,7 +192,7 @@ export interface AuthModule {
    *
    * Supported providers:
    * - `'google'` - {@link https://developers.google.com/identity/protocols/oauth2 | Google OAuth}. Enabled by default.
-   * - `'microsoft'` - {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable this in your app's authentication settings before using.
+   * - `'microsoft'` - {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable Microsoft in your app's authentication settings before specifying this provider.
    * - `'facebook'` - {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable this in your app's authentication settings before using.
    *
    * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, or `'facebook'`.
