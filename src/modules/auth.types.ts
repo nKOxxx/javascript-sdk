@@ -188,11 +188,15 @@ export interface AuthModule {
   /**
    * Redirects the user to a third-party authentication provider's login page.
    *
-   * Initiates OAuth/SSO login flow with providers like Google, Microsoft, etc. Requires a browser environment and can't be used in the backend.
+   * Initiates an OAuth login flow with one of the built-in providers. Requires a browser environment and can't be used in the backend.
    *
-   * @internal
-   * @param provider - Name of the supported authentication provider (e.g., 'google', 'microsoft').
-   * @param fromUrl - URL to redirect to after successful authentication. Defaults to '/'.
+   * Supported providers:
+   * - `'google'` - {@link https://developers.google.com/identity/protocols/oauth2 | Google OAuth}. Enabled by default.
+   * - `'microsoft'` - {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable Microsoft in your app's authentication settings before specifying this provider.
+   * - `'facebook'` - {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable this in your app's authentication settings before using.
+   *
+   * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, or `'facebook'`.
+   * @param fromUrl - URL to redirect to after successful authentication. Defaults to `'/'`.
    *
    * @example
    * ```typescript
@@ -202,10 +206,9 @@ export interface AuthModule {
    *
    * @example
    * ```typescript
-   * // Login with GitHub and redirect to dashboard
+   * // Login with Microsoft and redirect to dashboard
    * base44.auth.loginWithProvider('microsoft', '/dashboard');
    * ```
-   * @internal
    */
   loginWithProvider(provider: string, fromUrl?: string): void;
 
