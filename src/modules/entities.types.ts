@@ -34,6 +34,8 @@ export interface EntityHandler {
    * Retrieves all records of this type with support for sorting,
    * pagination, and field selection.
    *
+   * **Note:** The maximum limit is 5,000 items per request.
+   *
    * @param sort - Sort parameter, such as `'-created_date'` for descending. Defaults to `'-created_date'`.
    * @param limit - Maximum number of results to return. Defaults to `50`.
    * @param skip - Number of results to skip for pagination. Defaults to `0`.
@@ -77,6 +79,8 @@ export interface EntityHandler {
    *
    * Retrieves records that match specific criteria with support for
    * sorting, pagination, and field selection.
+   *
+   * **Note:** The maximum limit is 5,000 items per request.
    *
    * @param query - Query object with field-value pairs. Each key should be a field name
    * from your entity schema, and each value is the criteria to match. Records matching all
