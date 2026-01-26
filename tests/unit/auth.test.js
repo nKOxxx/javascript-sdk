@@ -7,17 +7,31 @@ describe('Auth Module', () => {
   let scope;
   const appId = 'test-app-id';
   const serverUrl = 'https://api.base44.com';
-  
+
   beforeEach(() => {
+    // Mock window.addEventListener and document for analytics module
+    if (typeof window !== 'undefined') {
+      if (!window.addEventListener) {
+        window.addEventListener = vi.fn();
+        window.removeEventListener = vi.fn();
+      }
+    }
+    if (typeof document === 'undefined') {
+      global.document = {
+        referrer: '',
+        visibilityState: 'visible'
+      };
+    }
+
     // Create a new client for each test
     base44 = createClient({
       serverUrl,
       appId,
     });
-    
+
     // Create a nock scope for mocking API calls
     scope = nock(serverUrl);
-    
+
     // Enable request debugging for Nock
     nock.disableNetConnect();
     nock.emitter.on('no match', (req) => {
@@ -316,33 +330,33 @@ describe('Auth Module', () => {
       global.window = {
         location: mockLocation
       };
-      
+
       const redirectUrl = 'https://example.com/logout-success';
       base44.auth.logout(redirectUrl);
-      
-      // Verify redirect
-      expect(mockLocation.href).toBe(redirectUrl);
-      
+
+      // Verify redirect to server-side logout endpoint with from_url parameter
+      const expectedUrl = `${serverUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(redirectUrl)}`;
+      expect(mockLocation.href).toBe(expectedUrl);
+
       // Restore window
       global.window = originalWindow;
     });
     
-    test('should reload page when no redirect URL is provided', async () => {
-      // Mock window object with reload function
-      const mockReload = vi.fn();
+    test('should redirect to logout endpoint when no redirect URL is provided', async () => {
+      // Mock window object
+      const mockLocation = { href: 'https://example.com/current-page' };
       const originalWindow = global.window;
       global.window = {
-        location: {
-          reload: mockReload
-        }
+        location: mockLocation
       };
-      
+
       // Call logout without redirect URL
       base44.auth.logout();
-      
-      // Verify page reload was called
-      expect(mockReload).toHaveBeenCalledTimes(1);
-      
+
+      // Verify redirect to server-side logout endpoint with current page as from_url
+      const expectedUrl = `${serverUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent('https://example.com/current-page')}`;
+      expect(mockLocation.href).toBe(expectedUrl);
+
       // Restore window
       global.window = originalWindow;
     });
