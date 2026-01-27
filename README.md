@@ -1,5 +1,7 @@
 # Base44 JavaScript SDK
 
+t
+
 The Base44 SDK provides a JavaScript interface for building apps on the Base44 platform. 
 
 You can use it in two ways:
