@@ -12,6 +12,13 @@ interface Todo {
   completed: boolean;
 }
 
+// Declaration merging: extend EntitiesModule with typed Todo handler
+declare module "../../src/modules/entities.types.ts" {
+  interface EntitiesModule {
+    Todo: EntityHandler<Todo>;
+  }
+}
+
 describe("Entities Module", () => {
   let base44: ReturnType<typeof createClient>;
   let scope: nock.Scope;
