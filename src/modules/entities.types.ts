@@ -4,7 +4,7 @@
 export type RealtimeEventType = "create" | "update" | "delete";
 
 /**
- * Payload received when a realtime event occurs.
+ * Payload received when a realtime event occurs
  */
 export interface RealtimeEvent {
   /** The type of change that occurred */
