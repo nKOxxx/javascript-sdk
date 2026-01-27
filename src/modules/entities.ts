@@ -1,5 +1,7 @@
 import { AxiosInstance } from "axios";
 import {
+  DeleteManyResult,
+  DeleteResult,
   EntitiesModule,
   EntityHandler,
   RealtimeCallback,
@@ -54,12 +56,12 @@ export function createEntitiesModule(
  * Parses the realtime message data and extracts event information.
  * @internal
  */
-function parseRealtimeMessage(dataStr: string): RealtimeEvent | null {
+function parseRealtimeMessage<T = any>(dataStr: string): RealtimeEvent<T> | null {
   try {
     const parsed = JSON.parse(dataStr);
     return {
       type: parsed.type as RealtimeEventType,
-      data: parsed.data,
+      data: parsed.data as T,
       id: parsed.id || parsed.data?.id,
       timestamp: parsed.timestamp || new Date().toISOString(),
     };
@@ -79,17 +81,22 @@ function parseRealtimeMessage(dataStr: string): RealtimeEvent | null {
  * @returns Entity handler with CRUD methods
  * @internal
  */
-function createEntityHandler(
+function createEntityHandler<T = any>(
   axios: AxiosInstance,
   appId: string,
   entityName: string,
   getSocket: () => ReturnType<typeof RoomsSocket>
-): EntityHandler {
+): EntityHandler<T> {
   const baseURL = `/apps/${appId}/entities/${entityName}`;
 
   return {
     // List entities with optional pagination and sorting
-    async list(sort: string, limit: number, skip: number, fields: string[]) {
+    async list(
+      sort?: string,
+      limit?: number,
+      skip?: number,
+      fields?: string[]
+    ): Promise<T[]> {
       const params: Record<string, string | number> = {};
       if (sort) params.sort = sort;
       if (limit) params.limit = limit;
@@ -102,12 +109,12 @@ function createEntityHandler(
 
     // Filter entities based on query
     async filter(
-      query: Record<string, any>,
-      sort: string,
-      limit: number,
-      skip: number,
-      fields: string[]
-    ) {
+      query: Partial<T>,
+      sort?: string,
+      limit?: number,
+      skip?: number,
+      fields?: string[]
+    ): Promise<T[]> {
       const params: Record<string, string | number> = {
         q: JSON.stringify(query),
       };
@@ -122,37 +129,37 @@ function createEntityHandler(
     },
 
     // Get entity by ID
-    async get(id: string) {
+    async get(id: string): Promise<T> {
       return axios.get(`${baseURL}/${id}`);
     },
 
     // Create new entity
-    async create(data: Record<string, any>) {
+    async create(data: Partial<T>): Promise<T> {
       return axios.post(baseURL, data);
     },
 
     // Update entity by ID
-    async update(id: string, data: Record<string, any>) {
+    async update(id: string, data: Partial<T>): Promise<T> {
       return axios.put(`${baseURL}/${id}`, data);
     },
 
     // Delete entity by ID
-    async delete(id: string) {
+    async delete(id: string): Promise<DeleteResult> {
       return axios.delete(`${baseURL}/${id}`);
     },
 
     // Delete multiple entities based on query
-    async deleteMany(query: Record<string, any>) {
+    async deleteMany(query: Partial<T>): Promise<DeleteManyResult> {
       return axios.delete(baseURL, { data: query });
     },
 
     // Create multiple entities in a single request
-    async bulkCreate(data: Record<string, any>[]) {
+    async bulkCreate(data: Partial<T>[]): Promise<T[]> {
       return axios.post(`${baseURL}/bulk`, data);
     },
 
     // Import entities from a file
-    async importEntities(file: File) {
+    async importEntities(file: File): Promise<any> {
       const formData = new FormData();
       formData.append("file", file, file.name);
 
@@ -164,14 +171,14 @@ function createEntityHandler(
     },
 
     // Subscribe to realtime updates
-    subscribe(callback: RealtimeCallback): () => void {
+    subscribe(callback: RealtimeCallback<T>): () => void {
       const room = `entities:${appId}:${entityName}`;
 
       // Get the socket and subscribe to the room
       const socket = getSocket();
       const unsubscribe = socket.subscribeToRoom(room, {
         update_model: (msg) => {
-          const event = parseRealtimeMessage(msg.data);
+          const event = parseRealtimeMessage<T>(msg.data);
           if (!event) {
             return;
           }

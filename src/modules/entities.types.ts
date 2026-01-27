@@ -5,12 +5,14 @@ export type RealtimeEventType = "create" | "update" | "delete";
 
 /**
  * Payload received when a realtime event occurs.
+ *
+ * @typeParam T - The entity type for the data field. Defaults to `any`.
  */
-export interface RealtimeEvent {
+export interface RealtimeEvent<T = any> {
   /** The type of change that occurred */
   type: RealtimeEventType;
   /** The entity data */
-  data: any;
+  data: T;
   /** The unique identifier of the affected entity */
   id: string;
   /** ISO 8601 timestamp of when the event occurred */
@@ -19,15 +21,37 @@ export interface RealtimeEvent {
 
 /**
  * Callback function invoked when a realtime event occurs.
+ *
+ * @typeParam T - The entity type for the event data. Defaults to `any`.
  */
-export type RealtimeCallback = (event: RealtimeEvent) => void;
+export type RealtimeCallback<T = any> = (event: RealtimeEvent<T>) => void;
+
+/**
+ * Result returned when deleting a single entity.
+ */
+export interface DeleteResult {
+  /** Whether the deletion was successful */
+  success: boolean;
+}
+
+/**
+ * Result returned when deleting multiple entities.
+ */
+export interface DeleteManyResult {
+  /** Whether the deletion was successful */
+  success: boolean;
+  /** Number of entities that were deleted */
+  deleted: number;
+}
 
 /**
  * Entity handler providing CRUD operations for a specific entity type.
  *
  * Each entity in the app gets a handler with these methods for managing data.
+ *
+ * @typeParam T - The entity type. Defaults to `any` for backward compatibility.
  */
-export interface EntityHandler {
+export interface EntityHandler<T = any> {
   /**
    * Lists records with optional pagination and sorting.
    *
@@ -72,7 +96,7 @@ export interface EntityHandler {
     limit?: number,
     skip?: number,
     fields?: string[]
-  ): Promise<any>;
+  ): Promise<T[]>;
 
   /**
    * Filters records based on a query.
@@ -132,12 +156,12 @@ export interface EntityHandler {
    * ```
    */
   filter(
-    query: Record<string, any>,
+    query: Partial<T>,
     sort?: string,
     limit?: number,
     skip?: number,
     fields?: string[]
-  ): Promise<any>;
+  ): Promise<T[]>;
 
   /**
    * Gets a single record by ID.
@@ -154,7 +178,7 @@ export interface EntityHandler {
    * console.log(record.name);
    * ```
    */
-  get(id: string): Promise<any>;
+  get(id: string): Promise<T>;
 
   /**
    * Creates a new record.
@@ -175,7 +199,7 @@ export interface EntityHandler {
    * console.log('Created record with ID:', newRecord.id);
    * ```
    */
-  create(data: Record<string, any>): Promise<any>;
+  create(data: Partial<T>): Promise<T>;
 
   /**
    * Updates an existing record.
@@ -205,7 +229,7 @@ export interface EntityHandler {
    * });
    * ```
    */
-  update(id: string, data: Record<string, any>): Promise<any>;
+  update(id: string, data: Partial<T>): Promise<T>;
 
   /**
    * Deletes a single record by ID.
@@ -219,10 +243,10 @@ export interface EntityHandler {
    * ```typescript
    * // Delete a record
    * const result = await base44.entities.MyEntity.delete('entity-123');
-   * console.log('Deleted:', result);
+   * console.log('Deleted:', result.success);
    * ```
    */
-  delete(id: string): Promise<any>;
+  delete(id: string): Promise<DeleteResult>;
 
   /**
    * Deletes multiple records matching a query.
@@ -244,7 +268,7 @@ export interface EntityHandler {
    * console.log('Deleted:', result);
    * ```
    */
-  deleteMany(query: Record<string, any>): Promise<any>;
+  deleteMany(query: Partial<T>): Promise<DeleteManyResult>;
 
   /**
    * Creates multiple records in a single request.
@@ -265,7 +289,7 @@ export interface EntityHandler {
    * ]);
    * ```
    */
-  bulkCreate(data: Record<string, any>[]): Promise<any>;
+  bulkCreate(data: Partial<T>[]): Promise<T[]>;
 
   /**
    * Imports records from a file.
@@ -315,7 +339,7 @@ export interface EntityHandler {
    * unsubscribe();
    * ```
    */
-  subscribe(callback: RealtimeCallback): () => void;
+  subscribe(callback: RealtimeCallback<T>): () => void;
 }
 
 /**
@@ -364,5 +388,5 @@ export interface EntitiesModule {
    * base44.entities.AnotherEntity
    * ```
    */
-  [entityName: string]: EntityHandler;
+  [entityName: string]: EntityHandler<any>;
 }
