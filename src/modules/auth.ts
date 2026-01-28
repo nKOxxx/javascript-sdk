@@ -65,7 +65,7 @@ export function createAuthModule(
       // Build the provider login URL (google is the default, so no provider path needed)
       const providerPath = provider === "google" ? "" : `/${provider}`;
       const loginUrl = `${
-        options.serverUrl
+        options.appBaseUrl
       }/api/apps/auth${providerPath}/login?app_id=${appId}&from_url=${encodeURIComponent(
         redirectUrl
       )}`;
@@ -96,7 +96,7 @@ export function createAuthModule(
         const fromUrl = redirectUrl || window.location.href;
 
         // Redirect to server-side logout endpoint to clear HTTP-only cookies
-        const logoutUrl = `${options.serverUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(fromUrl)}`;
+        const logoutUrl = `${options.appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(fromUrl)}`;
         window.location.href = logoutUrl;
       }
     },
