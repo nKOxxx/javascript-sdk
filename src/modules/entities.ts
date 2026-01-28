@@ -4,9 +4,11 @@ import {
   DeleteResult,
   EntitiesModule,
   EntityHandler,
+  ImportResult,
   RealtimeCallback,
   RealtimeEvent,
   RealtimeEventType,
+  SortField,
 } from "./entities.types";
 import { RoomsSocket } from "../utils/socket-utils.js";
 
@@ -91,12 +93,12 @@ function createEntityHandler<T = any>(
 
   return {
     // List entities with optional pagination and sorting
-    async list(
-      sort?: string,
+    async list<K extends keyof T = keyof T>(
+      sort?: SortField<T>,
       limit?: number,
       skip?: number,
-      fields?: string[]
-    ): Promise<T[]> {
+      fields?: K[]
+    ): Promise<Pick<T, K>[]> {
       const params: Record<string, string | number> = {};
       if (sort) params.sort = sort;
       if (limit) params.limit = limit;
@@ -108,13 +110,13 @@ function createEntityHandler<T = any>(
     },
 
     // Filter entities based on query
-    async filter(
+    async filter<K extends keyof T = keyof T>(
       query: Partial<T>,
-      sort?: string,
+      sort?: SortField<T>,
       limit?: number,
       skip?: number,
-      fields?: string[]
-    ): Promise<T[]> {
+      fields?: K[]
+    ): Promise<Pick<T, K>[]> {
       const params: Record<string, string | number> = {
         q: JSON.stringify(query),
       };
@@ -159,7 +161,7 @@ function createEntityHandler<T = any>(
     },
 
     // Import entities from a file
-    async importEntities(file: File): Promise<any> {
+    async importEntities(file: File): Promise<ImportResult<T>> {
       const formData = new FormData();
       formData.append("file", file, file.name);
 
