@@ -143,15 +143,15 @@ describe('Auth Module', () => {
       global.window = {
         location: mockLocation
       };
-      
+
       const nextUrl = 'https://example.com/dashboard';
       base44.auth.redirectToLogin(nextUrl);
-      
-      // Verify the redirect URL was set correctly
+
+      // Verify the redirect URL was set correctly (uses serverUrl as fallback when appBaseUrl is not provided)
       expect(mockLocation.href).toBe(
-        `/login?from_url=${encodeURIComponent(nextUrl)}`
+        `${serverUrl}/login?from_url=${encodeURIComponent(nextUrl)}&app_id=${appId}`
       );
-      
+
       // Restore window
       global.window = originalWindow;
     });
@@ -167,9 +167,9 @@ describe('Auth Module', () => {
 
       base44.auth.redirectToLogin();
 
-      // Verify the redirect URL uses current URL
+      // Verify the redirect URL uses current URL (and serverUrl as fallback)
       expect(mockLocation.href).toBe(
-        `/login?from_url=${encodeURIComponent(currentUrl)}`
+        `${serverUrl}/login?from_url=${encodeURIComponent(currentUrl)}&app_id=${appId}`
       );
 
       // Restore window
@@ -196,17 +196,17 @@ describe('Auth Module', () => {
 
       // Verify the redirect URL uses the custom appBaseUrl
       expect(mockLocation.href).toBe(
-        `${customAppBaseUrl}/login?from_url=${encodeURIComponent(nextUrl)}`
+        `${customAppBaseUrl}/login?from_url=${encodeURIComponent(nextUrl)}&app_id=${appId}`
       );
 
       // Restore window
       global.window = originalWindow;
     });
 
-    test('should use relative URL for login redirect when appBaseUrl is not provided', () => {
-      // Mock window.location
+    test('should use serverUrl for login redirect when appBaseUrl is not provided (localhost compatibility)', () => {
+      // Mock window.location as localhost
       const originalWindow = global.window;
-      const mockLocation = { href: '', origin: 'https://current-app.com' };
+      const mockLocation = { href: '', origin: 'http://localhost:3000' };
       global.window = {
         location: mockLocation
       };
@@ -214,9 +214,10 @@ describe('Auth Module', () => {
       const nextUrl = 'https://example.com/dashboard';
       base44.auth.redirectToLogin(nextUrl);
 
-      // Verify the redirect URL uses a relative path (no appBaseUrl prefix)
+      // Verify the redirect URL uses serverUrl as fallback (not a relative path)
+      // This ensures localhost apps can still redirect to the correct login server
       expect(mockLocation.href).toBe(
-        `/login?from_url=${encodeURIComponent(nextUrl)}`
+        `${serverUrl}/login?from_url=${encodeURIComponent(nextUrl)}&app_id=${appId}`
       );
 
       // Restore window
