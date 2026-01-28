@@ -7,6 +7,7 @@ describe('Auth Module', () => {
   let scope;
   const appId = 'test-app-id';
   const serverUrl = 'https://api.base44.com';
+  const appBaseUrl = 'https://api.base44.com';
 
   beforeEach(() => {
     // Mock window.addEventListener and document for analytics module
@@ -27,6 +28,7 @@ describe('Auth Module', () => {
     base44 = createClient({
       serverUrl,
       appId,
+      appBaseUrl,
     });
 
     // Create a nock scope for mocking API calls
@@ -157,15 +159,15 @@ describe('Auth Module', () => {
       global.window = {
         location: mockLocation
       };
-      
+
       const nextUrl = 'https://example.com/dashboard';
       base44.auth.redirectToLogin(nextUrl);
-      
+
       // Verify the redirect URL was set correctly
       expect(mockLocation.href).toBe(
-        `/login?from_url=${encodeURIComponent(nextUrl)}`
+        `${appBaseUrl}/login?from_url=${encodeURIComponent(nextUrl)}`
       );
-      
+
       // Restore window
       global.window = originalWindow;
     });
@@ -183,7 +185,7 @@ describe('Auth Module', () => {
 
       // Verify the redirect URL uses current URL
       expect(mockLocation.href).toBe(
-        `/login?from_url=${encodeURIComponent(currentUrl)}`
+        `${appBaseUrl}/login?from_url=${encodeURIComponent(currentUrl)}`
       );
 
       // Restore window
@@ -218,6 +220,12 @@ describe('Auth Module', () => {
     });
 
     test('should use relative URL for login redirect when appBaseUrl is not provided', () => {
+      // Create a client without appBaseUrl
+      const clientWithoutAppBaseUrl = createClient({
+        serverUrl,
+        appId,
+      });
+
       // Mock window.location
       const originalWindow = global.window;
       const mockLocation = { href: '', origin: 'https://current-app.com' };
@@ -226,7 +234,7 @@ describe('Auth Module', () => {
       };
 
       const nextUrl = 'https://example.com/dashboard';
-      base44.auth.redirectToLogin(nextUrl);
+      clientWithoutAppBaseUrl.auth.redirectToLogin(nextUrl);
 
       // Verify the redirect URL uses a relative path (no appBaseUrl prefix)
       expect(mockLocation.href).toBe(
@@ -335,7 +343,7 @@ describe('Auth Module', () => {
       base44.auth.logout(redirectUrl);
 
       // Verify redirect to server-side logout endpoint with from_url parameter
-      const expectedUrl = `${serverUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(redirectUrl)}`;
+      const expectedUrl = `${appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(redirectUrl)}`;
       expect(mockLocation.href).toBe(expectedUrl);
 
       // Restore window
@@ -354,7 +362,7 @@ describe('Auth Module', () => {
       base44.auth.logout();
 
       // Verify redirect to server-side logout endpoint with current page as from_url
-      const expectedUrl = `${serverUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent('https://example.com/current-page')}`;
+      const expectedUrl = `${appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent('https://example.com/current-page')}`;
       expect(mockLocation.href).toBe(expectedUrl);
 
       // Restore window
