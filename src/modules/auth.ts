@@ -48,10 +48,13 @@ export function createAuthModule(
         ? new URL(nextUrl, window.location.origin).toString()
         : window.location.href;
 
+      // Sanitize appBaseUrl: remove trailing slashes and /login suffix to prevent URL stacking
+      const sanitizedBaseUrl = (options.appBaseUrl ?? "")
+        .replace(/\/+$/, "")
+        .replace(/\/login$/, "");
+
       // Build the login URL
-      const loginUrl = `${
-        options.appBaseUrl ?? ""
-      }/login?from_url=${encodeURIComponent(redirectUrl)}`;
+      const loginUrl = `${sanitizedBaseUrl}/login?from_url=${encodeURIComponent(redirectUrl)}`;
 
       // Redirect to the login page
       window.location.href = loginUrl;

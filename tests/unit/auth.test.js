@@ -222,6 +222,87 @@ describe('Auth Module', () => {
       // Restore window
       global.window = originalWindow;
     });
+
+    describe('appBaseUrl sanitization', () => {
+      let testClient;
+      let originalWindow;
+
+      beforeEach(() => {
+        // Save and clear window state before each test
+        originalWindow = global.window;
+      });
+
+      afterEach(() => {
+        // Restore original window state after each test
+        global.window = originalWindow;
+      });
+
+      test('should sanitize appBaseUrl with trailing slash', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com/',
+        });
+
+        // Mock window.location for the test
+        const mockLocation = { href: '' };
+        global.window = {
+          location: mockLocation
+        };
+
+        const nextUrl = 'https://example.com/dashboard';
+        testClient.auth.redirectToLogin(nextUrl);
+
+        // Should produce: https://custom-app.example.com/login (not //login)
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
+        );
+      });
+
+      test('should sanitize appBaseUrl that already ends with /login', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com/login',
+        });
+
+        // Mock window.location for the test
+        const mockLocation = { href: '' };
+        global.window = {
+          location: mockLocation
+        };
+
+        const nextUrl = 'https://example.com/dashboard';
+        testClient.auth.redirectToLogin(nextUrl);
+
+        // Should produce: https://custom-app.example.com/login (not /login/login)
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
+        );
+      });
+
+      test('should sanitize appBaseUrl with trailing slash and /login', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com/login/',
+        });
+
+        // Mock window.location for the test
+        const mockLocation = { href: '' };
+        global.window = {
+          location: mockLocation
+        };
+
+        const nextUrl = 'https://example.com/dashboard';
+        testClient.auth.redirectToLogin(nextUrl);
+
+        // Should produce: https://custom-app.example.com/login
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
+        );
+      });
+    });
   });
   
   describe('logout()', () => {
