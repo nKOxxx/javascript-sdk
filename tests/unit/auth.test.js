@@ -223,7 +223,7 @@ describe('Auth Module', () => {
       global.window = originalWindow;
     });
 
-    describe('appBaseUrl sanitization', () => {
+    describe('redirect loop prevention', () => {
       let testClient;
       let originalWindow;
 
@@ -237,11 +237,11 @@ describe('Auth Module', () => {
         global.window = originalWindow;
       });
 
-      test('should sanitize appBaseUrl with trailing slash', () => {
+      test('should prevent redirect loops when nextUrl is already a login URL', () => {
         testClient = createClient({
           serverUrl,
           appId,
-          appBaseUrl: 'https://custom-app.example.com/',
+          appBaseUrl: 'https://custom-app.example.com',
         });
 
         // Mock window.location for the test
@@ -250,56 +250,14 @@ describe('Auth Module', () => {
           location: mockLocation
         };
 
-        const nextUrl = 'https://example.com/dashboard';
-        testClient.auth.redirectToLogin(nextUrl);
+        // nextUrl is already a login URL with from_url - should extract original destination
+        const originalDestination = 'https://example.com/dashboard';
+        const nestedLoginUrl = `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`;
+        testClient.auth.redirectToLogin(nestedLoginUrl);
 
-        // Should produce: https://custom-app.example.com/login (not //login)
+        // Should use the original destination, not nest login URLs
         expect(mockLocation.href).toBe(
-          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
-        );
-      });
-
-      test('should sanitize appBaseUrl that already ends with /login', () => {
-        testClient = createClient({
-          serverUrl,
-          appId,
-          appBaseUrl: 'https://custom-app.example.com/login',
-        });
-
-        // Mock window.location for the test
-        const mockLocation = { href: '' };
-        global.window = {
-          location: mockLocation
-        };
-
-        const nextUrl = 'https://example.com/dashboard';
-        testClient.auth.redirectToLogin(nextUrl);
-
-        // Should produce: https://custom-app.example.com/login (not /login/login)
-        expect(mockLocation.href).toBe(
-          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
-        );
-      });
-
-      test('should sanitize appBaseUrl with trailing slash and /login', () => {
-        testClient = createClient({
-          serverUrl,
-          appId,
-          appBaseUrl: 'https://custom-app.example.com/login/',
-        });
-
-        // Mock window.location for the test
-        const mockLocation = { href: '' };
-        global.window = {
-          location: mockLocation
-        };
-
-        const nextUrl = 'https://example.com/dashboard';
-        testClient.auth.redirectToLogin(nextUrl);
-
-        // Should produce: https://custom-app.example.com/login
-        expect(mockLocation.href).toBe(
-          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nextUrl)}`
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`
         );
       });
     });

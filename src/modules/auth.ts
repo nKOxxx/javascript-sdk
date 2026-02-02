@@ -44,17 +44,28 @@ export function createAuthModule(
       }
 
       // If nextUrl is not provided, use the current URL
-      const redirectUrl = nextUrl
+      let redirectUrl = nextUrl
         ? new URL(nextUrl, window.location.origin).toString()
         : window.location.href;
 
-      // Sanitize appBaseUrl: remove trailing slashes and /login suffix to prevent URL stacking
-      const sanitizedBaseUrl = (options.appBaseUrl ?? "")
-        .replace(/\/+$/, "")
-        .replace(/\/login$/, "");
+      // Prevent redirect loops: if redirectUrl is already a login URL, extract the original from_url
+      try {
+        const parsedUrl = new URL(redirectUrl);
+        if (parsedUrl.pathname.endsWith("/login")) {
+          const originalFromUrl = parsedUrl.searchParams.get("from_url");
+          if (originalFromUrl) {
+            // Use the original destination instead of nesting login URLs
+            redirectUrl = originalFromUrl;
+          }
+        }
+      } catch {
+        // If URL parsing fails, continue with the original redirectUrl
+      }
 
       // Build the login URL
-      const loginUrl = `${sanitizedBaseUrl}/login?from_url=${encodeURIComponent(redirectUrl)}`;
+      const loginUrl = `${
+        options.appBaseUrl ?? ""
+      }/login?from_url=${encodeURIComponent(redirectUrl)}`;
 
       // Redirect to the login page
       window.location.href = loginUrl;
