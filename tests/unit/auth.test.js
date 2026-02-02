@@ -237,27 +237,117 @@ describe('Auth Module', () => {
         global.window = originalWindow;
       });
 
-      test('should prevent redirect loops when nextUrl is already a login URL', () => {
+      test('should prevent redirect loops when nextUrl is already a login URL with same-origin from_url', () => {
         testClient = createClient({
           serverUrl,
           appId,
           appBaseUrl: 'https://custom-app.example.com',
         });
 
-        // Mock window.location for the test
-        const mockLocation = { href: '' };
+        // Mock window.location for the test - must match the from_url origin for validation
+        const mockLocation = { href: '', origin: 'https://custom-app.example.com' };
         global.window = {
           location: mockLocation
         };
 
-        // nextUrl is already a login URL with from_url - should extract original destination
-        const originalDestination = 'https://example.com/dashboard';
+        // nextUrl is already a login URL with same-origin from_url - should extract original destination
+        const originalDestination = 'https://custom-app.example.com/dashboard';
         const nestedLoginUrl = `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`;
         testClient.auth.redirectToLogin(nestedLoginUrl);
 
         // Should use the original destination, not nest login URLs
         expect(mockLocation.href).toBe(
           `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`
+        );
+      });
+
+      test('should prevent redirect loops when login URL has trailing slash', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com',
+        });
+
+        const mockLocation = { href: '', origin: 'https://custom-app.example.com' };
+        global.window = {
+          location: mockLocation
+        };
+
+        // Login URL with trailing slash
+        const originalDestination = 'https://custom-app.example.com/dashboard';
+        const nestedLoginUrl = `https://custom-app.example.com/login/?from_url=${encodeURIComponent(originalDestination)}`;
+        testClient.auth.redirectToLogin(nestedLoginUrl);
+
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`
+        );
+      });
+
+      test('should allow relative URLs in from_url parameter', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com',
+        });
+
+        const mockLocation = { href: '', origin: 'https://custom-app.example.com' };
+        global.window = {
+          location: mockLocation
+        };
+
+        // from_url is a relative path
+        const originalDestination = '/dashboard';
+        const nestedLoginUrl = `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`;
+        testClient.auth.redirectToLogin(nestedLoginUrl);
+
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(originalDestination)}`
+        );
+      });
+
+      test('should reject cross-origin from_url to prevent open redirect attacks', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com',
+        });
+
+        const mockLocation = { href: '', origin: 'https://custom-app.example.com' };
+        global.window = {
+          location: mockLocation
+        };
+
+        // Malicious cross-origin from_url - should NOT be extracted
+        const maliciousDestination = 'https://evil.com/phishing';
+        const nestedLoginUrl = `https://custom-app.example.com/login?from_url=${encodeURIComponent(maliciousDestination)}`;
+        testClient.auth.redirectToLogin(nestedLoginUrl);
+
+        // Should keep the nested login URL since the from_url is cross-origin (rejected)
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nestedLoginUrl)}`
+        );
+      });
+
+      test('should reject protocol-relative URLs to prevent open redirect attacks', () => {
+        testClient = createClient({
+          serverUrl,
+          appId,
+          appBaseUrl: 'https://custom-app.example.com',
+        });
+
+        const mockLocation = { href: '', origin: 'https://custom-app.example.com' };
+        global.window = {
+          location: mockLocation
+        };
+
+        // Protocol-relative URL attempting open redirect - should be rejected
+        const maliciousDestination = '//evil.com/phishing';
+        const nestedLoginUrl = `https://custom-app.example.com/login?from_url=${encodeURIComponent(maliciousDestination)}`;
+        testClient.auth.redirectToLogin(nestedLoginUrl);
+
+        // Should keep the nested login URL since the from_url is malicious (rejected)
+        expect(mockLocation.href).toBe(
+          `https://custom-app.example.com/login?from_url=${encodeURIComponent(nestedLoginUrl)}`
         );
       });
     });

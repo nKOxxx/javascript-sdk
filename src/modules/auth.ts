@@ -8,6 +8,33 @@ import {
 } from "./auth.types";
 
 /**
+ * Validates that a redirect URL is safe to use (prevents open redirect attacks).
+ * Only allows same-origin URLs or relative paths.
+ *
+ * @param url - The URL to validate
+ * @param currentOrigin - The current window origin for comparison
+ * @returns true if the URL is safe to redirect to
+ */
+function isValidRedirectUrl(url: string): boolean {
+  // Relative URLs starting with / are always safe
+  if (url.startsWith("/") && !url.startsWith("//")) {
+    return true;
+  }
+
+  // For absolute URLs, verify same origin
+  try {
+    const parsed = new URL(url);
+    return (
+      typeof window !== "undefined" &&
+      parsed.origin === window.location.origin
+    );
+  } catch {
+    // If URL parsing fails, reject it for safety
+    return false;
+  }
+}
+
+/**
  * Creates the auth module for the Base44 SDK.
  *
  * @param axios - Axios instance for API requests
@@ -51,9 +78,11 @@ export function createAuthModule(
       // Prevent redirect loops: if redirectUrl is already a login URL, extract the original from_url
       try {
         const parsedUrl = new URL(redirectUrl);
-        if (parsedUrl.pathname.endsWith("/login")) {
+        const pathname = parsedUrl.pathname;
+        // Check for login path with or without trailing slash
+        if (pathname.endsWith("/login") || pathname.endsWith("/login/")) {
           const originalFromUrl = parsedUrl.searchParams.get("from_url");
-          if (originalFromUrl) {
+          if (originalFromUrl && isValidRedirectUrl(originalFromUrl)) {
             // Use the original destination instead of nesting login URLs
             redirectUrl = originalFromUrl;
           }
