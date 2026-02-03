@@ -96,7 +96,7 @@ export function createAuthModule(
         const fromUrl = redirectUrl || window.location.href;
 
         // Redirect to server-side logout endpoint to clear HTTP-only cookies
-        const logoutUrl = `${options.appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(fromUrl)}`;
+        const logoutUrl = `${options.appBaseUrl}/api/apps/auth/logout?from_url=${encodeURIComponent(fromUrl)}`;
         window.location.href = logoutUrl;
       }
     },

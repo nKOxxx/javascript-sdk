@@ -343,7 +343,7 @@ describe('Auth Module', () => {
       base44.auth.logout(redirectUrl);
 
       // Verify redirect to server-side logout endpoint with from_url parameter
-      const expectedUrl = `${appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent(redirectUrl)}`;
+      const expectedUrl = `${appBaseUrl}/api/apps/auth/logout?from_url=${encodeURIComponent(redirectUrl)}`;
       expect(mockLocation.href).toBe(expectedUrl);
 
       // Restore window
@@ -362,7 +362,7 @@ describe('Auth Module', () => {
       base44.auth.logout();
 
       // Verify redirect to server-side logout endpoint with current page as from_url
-      const expectedUrl = `${appBaseUrl}/api/apps/${appId}/auth/logout?from_url=${encodeURIComponent('https://example.com/current-page')}`;
+      const expectedUrl = `${appBaseUrl}/api/apps/auth/logout?from_url=${encodeURIComponent('https://example.com/current-page')}`;
       expect(mockLocation.href).toBe(expectedUrl);
 
       // Restore window
