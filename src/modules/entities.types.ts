@@ -5,9 +5,7 @@ export type RealtimeEventType = "create" | "update" | "delete";
 
 /**
  * Payload received when a realtime event occurs.
- *
- * @typeParam T - The entity type for the data field. Defaults to `any`.
- */
+g */
 export interface RealtimeEvent<T = any> {
   /** The type of change that occurred */
   type: RealtimeEventType;
@@ -21,8 +19,6 @@ export interface RealtimeEvent<T = any> {
 
 /**
  * Callback function invoked when a realtime event occurs.
- *
- * @typeParam T - The entity type for the event data. Defaults to `any`.
  */
 export type RealtimeCallback<T = any> = (event: RealtimeEvent<T>) => void;
 
@@ -46,34 +42,18 @@ export interface DeleteManyResult {
 
 /**
  * Result returned when importing entities from a file.
- *
- * @typeParam T - The entity type for imported records. Defaults to `any`.
  */
 export interface ImportResult<T = any> {
   /** Status of the import operation */
   status: "success" | "error";
-  /** Details message, e.g., "Successfully imported 3 entities with RLS enforcement" */
+  /** Details message */
   details: string | null;
   /** Array of created entity objects when successful, or null on error */
   output: T[] | null;
 }
 
 /**
- * Sort field type for entity queries.
- *
- * Supports ascending (no prefix or `'+'`) and descending (`'-'`) sorting.
- *
- * @typeParam T - The entity type to derive sortable fields from.
- *
- * @example
- * ```typescript
- * // Ascending sort (default)
- * 'created_date'
- * '+created_date'
- *
- * // Descending sort
- * '-created_date'
- * ```
+ * Sort field for entity queries. Prefix with `-` for descending order.
  */
 export type SortField<T> =
   | (keyof T & string)
@@ -82,26 +62,7 @@ export type SortField<T> =
 
 /**
  * Registry mapping entity names to their TypeScript types.
- *
- * This interface is designed to be augmented by generated type declaration files.
- * When augmented, it enables type-safe entity access throughout your application.
- *
- * @example
- * ```typescript
- * // In your generated types.d.ts file:
- * declare module '@base44/sdk' {
- *   interface EntityTypeRegistry {
- *     Task: { title: string; completed: boolean };
- *     User: { email: string; name: string };
- *   }
- * }
- *
- * // Then in your code:
- * const task = await base44.entities.Task.create({
- *   title: 'Buy groceries',  // ✅ Type-checked
- *   completed: false
- * });
- * ```
+ * Augmented by `base44 types generate` to enable type-safe entity access.
  */
 export interface EntityTypeRegistry {}
 
@@ -109,8 +70,6 @@ export interface EntityTypeRegistry {}
  * Entity handler providing CRUD operations for a specific entity type.
  *
  * Each entity in the app gets a handler with these methods for managing data.
- *
- * @typeParam T - The entity type. Defaults to `any` for backward compatibility.
  */
 export interface EntityHandler<T = any> {
   /**
@@ -121,12 +80,11 @@ export interface EntityHandler<T = any> {
    *
    * **Note:** The maximum limit is 5,000 items per request.
    *
-   * @typeParam K - The fields to include in the response. Defaults to all fields.
    * @param sort - Sort parameter, such as `'-created_date'` for descending. Defaults to `'-created_date'`.
    * @param limit - Maximum number of results to return. Defaults to `50`.
    * @param skip - Number of results to skip for pagination. Defaults to `0`.
    * @param fields - Array of field names to include in the response. Defaults to all fields.
-   * @returns Promise resolving to an array of records with selected fields.
+   * @returns Promise resolving to an array of records.
    *
    * @example
    * ```typescript
@@ -168,7 +126,6 @@ export interface EntityHandler<T = any> {
    *
    * **Note:** The maximum limit is 5,000 items per request.
    *
-   * @typeParam K - The fields to include in the response. Defaults to all fields.
    * @param query - Query object with field-value pairs. Each key should be a field name
    * from your entity schema, and each value is the criteria to match. Records matching all
    * specified criteria are returned. Field names are case-sensitive.
@@ -176,7 +133,7 @@ export interface EntityHandler<T = any> {
    * @param limit - Maximum number of results to return. Defaults to `50`.
    * @param skip - Number of results to skip for pagination. Defaults to `0`.
    * @param fields - Array of field names to include in the response. Defaults to all fields.
-   * @returns Promise resolving to an array of filtered records with selected fields.
+   * @returns Promise resolving to an array of filtered records.
    *
    * @example
    * ```typescript
@@ -328,7 +285,7 @@ export interface EntityHandler<T = any> {
    *   status: 'completed',
    *   priority: 'low'
    * });
-   * console.log('Deleted:', result);
+   * console.log('Deleted:', result.deleted);
    * ```
    */
   deleteMany(query: Partial<T>): Promise<DeleteManyResult>;
@@ -361,7 +318,7 @@ export interface EntityHandler<T = any> {
    * The file format should match your entity structure. Requires a browser environment and can't be used in the backend.
    *
    * @param file - File object to import.
-   * @returns Promise resolving to the import result containing status, details, and created records.
+   * @returns Promise resolving to the import result.
    *
    * @example
    * ```typescript
@@ -370,8 +327,8 @@ export interface EntityHandler<T = any> {
    *   const file = event.target.files?.[0];
    *   if (file) {
    *     const result = await base44.entities.MyEntity.importEntities(file);
-   *     if (result.status === 'success' && result.output) {
-   *       console.log(`Imported ${result.output.length} records`);
+   *     if (result.status === 'success') {
+   *       console.log(`Imported ${result.output?.length} records`);
    *     }
    *   }
    * };
@@ -409,7 +366,6 @@ export interface EntityHandler<T = any> {
 
 /**
  * Typed entities module - maps registry keys to typed handlers.
- * Only used when EntityTypeRegistry is augmented.
  */
 type TypedEntitiesModule = {
   [K in keyof EntityTypeRegistry]: EntityHandler<EntityTypeRegistry[K]>;
@@ -417,7 +373,6 @@ type TypedEntitiesModule = {
 
 /**
  * Dynamic entities module - allows any entity name with untyped handler.
- * Used as fallback and for entities not in the registry.
  */
 type DynamicEntitiesModule = {
   [entityName: string]: EntityHandler<any>;
@@ -432,7 +387,7 @@ type DynamicEntitiesModule = {
  * Entities are accessed dynamically using the pattern:
  * `base44.entities.EntityName.method()`
  *
- * When {@link EntityTypeRegistry} is augmented (via generated types.d.ts),
+ * When {@link EntityTypeRegistry} is augmented (via `base44 types generate`),
  * entity access becomes type-safe with autocomplete and type checking.
  *
  * This module is available to use with a client in all three authentication modes:
