@@ -81,6 +81,31 @@ export type SortField<T> =
   | `-${keyof T & string}`;
 
 /**
+ * Registry mapping entity names to their TypeScript types.
+ *
+ * This interface is designed to be augmented by generated type declaration files.
+ * When augmented, it enables type-safe entity access throughout your application.
+ *
+ * @example
+ * ```typescript
+ * // In your generated types.d.ts file:
+ * declare module '@base44/sdk' {
+ *   interface EntityTypeRegistry {
+ *     Task: { title: string; completed: boolean };
+ *     User: { email: string; name: string };
+ *   }
+ * }
+ *
+ * // Then in your code:
+ * const task = await base44.entities.Task.create({
+ *   title: 'Buy groceries',  // ✅ Type-checked
+ *   completed: false
+ * });
+ * ```
+ */
+export interface EntityTypeRegistry {}
+
+/**
  * Entity handler providing CRUD operations for a specific entity type.
  *
  * Each entity in the app gets a handler with these methods for managing data.
@@ -383,6 +408,22 @@ export interface EntityHandler<T = any> {
 }
 
 /**
+ * Typed entities module - maps registry keys to typed handlers.
+ * Only used when EntityTypeRegistry is augmented.
+ */
+type TypedEntitiesModule = {
+  [K in keyof EntityTypeRegistry]: EntityHandler<EntityTypeRegistry[K]>;
+};
+
+/**
+ * Dynamic entities module - allows any entity name with untyped handler.
+ * Used as fallback and for entities not in the registry.
+ */
+type DynamicEntitiesModule = {
+  [entityName: string]: EntityHandler<any>;
+};
+
+/**
  * Entities module for managing app data.
  *
  * This module provides dynamic access to all entities in the app.
@@ -390,6 +431,9 @@ export interface EntityHandler<T = any> {
  *
  * Entities are accessed dynamically using the pattern:
  * `base44.entities.EntityName.method()`
+ *
+ * When {@link EntityTypeRegistry} is augmented (via generated types.d.ts),
+ * entity access becomes type-safe with autocomplete and type checking.
  *
  * This module is available to use with a client in all three authentication modes:
  *
@@ -415,18 +459,4 @@ export interface EntityHandler<T = any> {
  * const allUsers = await base44.asServiceRole.entities.User.list();
  * ```
  */
-export interface EntitiesModule {
-  /**
-   * Access any entity by name.
-   *
-   * Use this to access entities defined in the app.
-   *
-   * @example
-   * ```typescript
-   * // Access entities dynamically
-   * base44.entities.MyEntity
-   * base44.entities.AnotherEntity
-   * ```
-   */
-  [entityName: string]: EntityHandler<any>;
-}
+export type EntitiesModule = TypedEntitiesModule & DynamicEntitiesModule;

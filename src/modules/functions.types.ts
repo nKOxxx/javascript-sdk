@@ -1,4 +1,35 @@
 /**
+ * Registry of function names.
+ *
+ * This interface is designed to be augmented by generated type declaration files.
+ * When augmented, it enables autocomplete for function names in the `invoke` method.
+ *
+ * @example
+ * ```typescript
+ * // In your generated types.d.ts file:
+ * declare module '@base44/sdk' {
+ *   interface FunctionNameRegistry {
+ *     calculateTotal: true;
+ *     processImage: true;
+ *   }
+ * }
+ *
+ * // Then in your code:
+ * await base44.functions.invoke('calculateTotal', { ... });
+ * //                            ^^^^^^^^^^^^^^^^
+ * //                            ✅ Autocomplete shows: 'calculateTotal' | 'processImage'
+ * ```
+ */
+export interface FunctionNameRegistry {}
+
+/**
+ * Function name type - uses registry keys if augmented, otherwise falls back to string.
+ */
+export type FunctionName = keyof FunctionNameRegistry extends never
+  ? string
+  : keyof FunctionNameRegistry;
+
+/**
  * Functions module for invoking custom backend functions.
  *
  * This module allows you to invoke the custom backend functions defined in the app.
@@ -17,7 +48,7 @@ export interface FunctionsModule {
    * the result. If any parameter is a `File` object, the request will automatically be
    * sent as `multipart/form-data`. Otherwise, it will be sent as JSON.
    *
-   * @param functionName - The name of the function to invoke.
+   * @param functionName - The name of the function to invoke. When FunctionNameRegistry is augmented, provides autocomplete.
    * @param data - An object containing named parameters for the function.
    * @returns Promise resolving to the function's response. The `data` property contains the data returned by the function, if there is any.
    *
@@ -46,5 +77,5 @@ export interface FunctionsModule {
    * };
    * ```
    */
-  invoke(functionName: string, data: Record<string, any>): Promise<any>;
+  invoke(functionName: FunctionName, data?: Record<string, any>): Promise<any>;
 }

@@ -3,6 +3,37 @@ import { RoomsSocket } from "../utils/socket-utils.js";
 import { ModelFilterParams } from "../types.js";
 
 /**
+ * Registry of agent names.
+ *
+ * This interface is designed to be augmented by generated type declaration files.
+ * When augmented, it enables autocomplete for agent names in methods like `createConversation`.
+ *
+ * @example
+ * ```typescript
+ * // In your generated types.d.ts file:
+ * declare module '@base44/sdk' {
+ *   interface AgentNameRegistry {
+ *     support_agent: true;
+ *     sales_bot: true;
+ *   }
+ * }
+ *
+ * // Then in your code:
+ * await base44.agents.createConversation({
+ *   agent_name: 'support_agent'  // ✅ Autocomplete shows: 'support_agent' | 'sales_bot'
+ * });
+ * ```
+ */
+export interface AgentNameRegistry {}
+
+/**
+ * Agent name type - uses registry keys if augmented, otherwise falls back to string.
+ */
+export type AgentName = keyof AgentNameRegistry extends never
+  ? string
+  : keyof AgentNameRegistry;
+
+/**
  * Reasoning information for an agent message.
  *
  * Contains details about the agent's reasoning process when generating a response.
@@ -134,8 +165,8 @@ export interface AgentMessage {
  * Parameters for creating a new conversation.
  */
 export interface CreateConversationParams {
-  /** The name of the agent to create a conversation with. */
-  agent_name: string;
+  /** The name of the agent to create a conversation with. When AgentNameRegistry is augmented, provides autocomplete. */
+  agent_name: AgentName;
   /** Optional metadata to attach to the conversation. */
   metadata?: Record<string, any>;
 }
@@ -359,7 +390,7 @@ export interface AgentsModule {
    * Generates a URL that users can use to connect with the agent through WhatsApp.
    * The URL includes authentication if a token is available.
    *
-   * @param agentName - The name of the agent.
+   * @param agentName - The name of the agent. When AgentNameRegistry is augmented, provides autocomplete.
    * @returns WhatsApp connection URL.
    *
    * @example
@@ -370,5 +401,5 @@ export interface AgentsModule {
    * // User can open this URL to start a WhatsApp conversation
    * ```
    */
-  getWhatsAppConnectURL(agentName: string): string;
+  getWhatsAppConnectURL(agentName: AgentName): string;
 }
