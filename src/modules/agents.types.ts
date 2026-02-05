@@ -4,7 +4,7 @@ import { ModelFilterParams } from "../types.js";
 
 /**
  * Registry of agent names.
- * Augmented by `base44 types generate` to enable autocomplete for agent names.
+ * Augment this interface to enable autocomplete for agent names.
  */
 export interface AgentNameRegistry {}
 

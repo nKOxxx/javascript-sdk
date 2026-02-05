@@ -1,6 +1,6 @@
 /**
  * Registry of function names.
- * Augmented by `base44 types generate` to enable autocomplete for function names.
+ * Augment this interface to enable autocomplete for function names.
  */
 export interface FunctionNameRegistry {}
 
