@@ -2,6 +2,15 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
 import { createClient } from "../../src/index.ts";
 
+// Module augmentation: register function names in FunctionNameRegistry
+declare module "../../src/modules/functions.types.ts" {
+  interface FunctionNameRegistry {
+    sendNotification: true;
+    processOrder: true;
+    generateReport: true;
+  }
+}
+
 describe("Functions Module", () => {
   let base44: ReturnType<typeof createClient>;
   let scope;
