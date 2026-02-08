@@ -36,6 +36,7 @@ export * from "./types.js";
 export type {
   EntitiesModule,
   EntityHandler,
+  EntityRecord,
   EntityTypeRegistry,
   RealtimeEventType,
   RealtimeEvent,
