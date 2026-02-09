@@ -98,8 +98,8 @@ export interface ResetPasswordParams {
 export interface AuthModuleOptions {
   /** Server URL for API requests. */
   serverUrl: string;
-  /** Optional base URL for the app (used for login redirects). */
-  appBaseUrl?: string;
+  /** Base URL for the app (used for login redirects). */
+  appBaseUrl: string;
 }
 
 /**

@@ -70,6 +70,9 @@ export function createClient(config: CreateClientConfig): Base44Client {
     headers: optionalHeaders,
   } = config;
 
+  // Normalize appBaseUrl to always be a string (empty if not provided or invalid)
+  const normalizedAppBaseUrl = typeof appBaseUrl === "string" ? appBaseUrl : "";
+
   const socketConfig: RoomsSocketConfig = {
     serverUrl,
     mountPath: "/ws-user-apps/socket.io/",
@@ -135,7 +138,7 @@ export function createClient(config: CreateClientConfig): Base44Client {
     functionsAxiosClient,
     appId,
     {
-      appBaseUrl,
+      appBaseUrl: normalizedAppBaseUrl,
       serverUrl,
     }
   );
