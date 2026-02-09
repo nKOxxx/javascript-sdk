@@ -64,7 +64,7 @@ describe('Client Creation', () => {
       serviceToken: 'service-token-123',
       requiresAuth: true,
     });
-    
+
     expect(client).toBeDefined();
     expect(client.entities).toBeDefined();
     expect(client.integrations).toBeDefined();
@@ -76,6 +76,59 @@ describe('Client Creation', () => {
     expect(client.asServiceRole.auth).toBeUndefined();
   });
 
+});
+
+describe('appBaseUrl Normalization', () => {
+  test('should use appBaseUrl when provided as a string', () => {
+    const customAppBaseUrl = 'https://custom-app.example.com';
+    const client = createClient({
+      appId: 'test-app-id',
+      appBaseUrl: customAppBaseUrl,
+    });
+
+    // Mock window.location
+    const originalWindow = global.window;
+    const mockLocation = { href: '', origin: 'https://current-app.com' };
+    global.window = {
+      location: mockLocation
+    };
+
+    const nextUrl = 'https://example.com/dashboard';
+    client.auth.redirectToLogin(nextUrl);
+
+    // Verify the redirect URL uses the custom appBaseUrl
+    expect(mockLocation.href).toBe(
+      `${customAppBaseUrl}/login?from_url=${encodeURIComponent(nextUrl)}`
+    );
+
+    // Restore window
+    global.window = originalWindow;
+  });
+
+  test('should normalize appBaseUrl to empty string when not provided', () => {
+    const client = createClient({
+      appId: 'test-app-id',
+      // appBaseUrl not provided
+    });
+
+    // Mock window.location
+    const originalWindow = global.window;
+    const mockLocation = { href: '', origin: 'https://current-app.com' };
+    global.window = {
+      location: mockLocation
+    };
+
+    const nextUrl = 'https://example.com/dashboard';
+    client.auth.redirectToLogin(nextUrl);
+
+    // Verify the redirect URL uses empty string (relative path)
+    expect(mockLocation.href).toBe(
+      `/login?from_url=${encodeURIComponent(nextUrl)}`
+    );
+
+    // Restore window
+    global.window = originalWindow;
+  });
 });
 
 describe('createClientFromRequest', () => {

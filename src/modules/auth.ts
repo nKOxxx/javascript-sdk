@@ -49,9 +49,7 @@ export function createAuthModule(
         : window.location.href;
 
       // Build the login URL
-      const loginUrl = `${
-        options.appBaseUrl ?? ""
-      }/login?from_url=${encodeURIComponent(redirectUrl)}`;
+      const loginUrl = `${options.appBaseUrl}/login?from_url=${encodeURIComponent(redirectUrl)}`;
 
       // Redirect to the login page
       window.location.href = loginUrl;
@@ -65,7 +63,7 @@ export function createAuthModule(
       // Build the provider login URL (google is the default, so no provider path needed)
       const providerPath = provider === "google" ? "" : `/${provider}`;
       const loginUrl = `${
-        options.serverUrl
+        options.appBaseUrl
       }/api/apps/auth${providerPath}/login?app_id=${appId}&from_url=${encodeURIComponent(
         redirectUrl
       )}`;
@@ -75,29 +73,29 @@ export function createAuthModule(
     },
 
     // Logout the current user
-    // Removes the token from localStorage and optionally redirects to a URL or reloads the page
     logout(redirectUrl?: string) {
-      // Remove token from axios headers
+      // Remove token from axios headers (always do this)
       delete axios.defaults.headers.common["Authorization"];
 
-      // Remove token from localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        try {
-          window.localStorage.removeItem("base44_access_token");
-          // Remove "token" that is set by the built-in SDK of platform version 2
-          window.localStorage.removeItem("token");
-        } catch (e) {
-          console.error("Failed to remove token from localStorage:", e);
-        }
-      }
-
-      // Redirect if a URL is provided
+      // Only do the rest if in a browser environment
       if (typeof window !== "undefined") {
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-        } else {
-          window.location.reload();
+        // Remove token from localStorage
+        if (window.localStorage) {
+          try {
+            window.localStorage.removeItem("base44_access_token");
+            // Remove "token" that is set by the built-in SDK of platform version 2
+            window.localStorage.removeItem("token");
+          } catch (e) {
+            console.error("Failed to remove token from localStorage:", e);
+          }
         }
+
+        // Determine the from_url parameter
+        const fromUrl = redirectUrl || window.location.href;
+
+        // Redirect to server-side logout endpoint to clear HTTP-only cookies
+        const logoutUrl = `${options.appBaseUrl}/api/apps/auth/logout?from_url=${encodeURIComponent(fromUrl)}`;
+        window.location.href = logoutUrl;
       }
     },
 
