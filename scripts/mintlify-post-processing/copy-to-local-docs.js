@@ -159,7 +159,7 @@ function updateDocsJson(repoDir, sdkFiles) {
     `SDK Reference pages: ${JSON.stringify(sdkReferencePages, null, 2)}`
   );
 
-  // Navigate to: Developers tab -> anchors -> References anchor -> groups -> JavaScript SDK -> SDK Reference
+  // Navigate to: Developers tab -> anchors -> SDK anchor -> groups -> SDK Reference
   const developersTab = docs.navigation.tabs.find(
     (tab) => tab.tab === "Developers"
   );
@@ -169,42 +169,31 @@ function updateDocsJson(repoDir, sdkFiles) {
     process.exit(1);
   }
 
-  // Find the References anchor (new structure uses anchors instead of groups at tab level)
-  const referencesAnchor = developersTab.anchors?.find(
-    (anchor) => anchor.anchor === "References"
+  // Find the SDK anchor
+  const sdkAnchor = developersTab.anchors?.find(
+    (anchor) => anchor.anchor === "SDK"
   );
 
-  if (!referencesAnchor) {
-    console.error("Could not find 'References' anchor in Developers tab");
+  if (!sdkAnchor) {
+    console.error("Could not find 'SDK' anchor in Developers tab");
     process.exit(1);
   }
 
-  // Find the JavaScript SDK group within the References anchor
-  const jsSdkGroup = referencesAnchor.groups?.find(
-    (g) => g.group === "JavaScript SDK"
-  );
-
-  if (!jsSdkGroup) {
-    console.error(
-      "Could not find 'JavaScript SDK' group in References anchor"
-    );
-    process.exit(1);
-  }
-
-  // Find SDK Reference within JavaScript SDK's pages (it's a nested group object)
-  const sdkRefIndex = jsSdkGroup.pages.findIndex(
-    (page) => typeof page === "object" && page.group === "SDK Reference"
+  // Find SDK Reference within the SDK anchor's groups
+  const sdkRefIndex = sdkAnchor.groups.findIndex(
+    (g) => g.group === "SDK Reference"
   );
 
   if (sdkRefIndex === -1) {
-    console.error("Could not find 'SDK Reference' group in JavaScript SDK");
+    console.error("Could not find 'SDK Reference' group in SDK anchor");
     process.exit(1);
   }
 
   // Update the SDK Reference pages with our generated groups
-  jsSdkGroup.pages[sdkRefIndex] = {
+  sdkAnchor.groups[sdkRefIndex] = {
     group: "SDK Reference",
     icon: "brackets-curly",
+    expanded: true,
     pages: sdkReferencePages,
   };
 

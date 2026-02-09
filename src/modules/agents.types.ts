@@ -181,7 +181,7 @@ export interface AgentsModuleConfig {
  *
  * This module is available to use with a client in all authentication modes:
  *
- * - **Anonymous or User authentication** (`base44.agents`): Access is scoped to the current user's permissions. Anonymous users can create conversations but can't retrieve them later, while authenticated users can access conversations they created.
+ * - **Anonymous or User authentication** (`base44.agents`): Access is scoped to the current user's permissions. Users must be authenticated to create and access conversations.
  * - **Service role authentication** (`base44.asServiceRole.agents`): Operations have elevated admin-level permissions. Can access all conversations that the app's admin role has access to.
  *
  */
@@ -210,6 +210,8 @@ export interface AgentsModule {
    *
    * Retrieves a single conversation using its unique identifier. To retrieve
    * all conversations, use {@linkcode getConversations | getConversations()} To filter, sort, or paginate conversations, use {@linkcode listConversations | listConversations()}.
+   *
+   * This function returns the complete stored conversation including full tool call results, even for large responses.
    *
    * @param conversationId - The unique identifier of the conversation.
    * @returns Promise resolving to the conversation, or undefined if not found.
@@ -322,6 +324,10 @@ export interface AgentsModule {
    * Establishes a WebSocket connection to receive instant updates when new
    * messages are added to the conversation. Returns an unsubscribe function
    * to clean up the connection.
+   * 
+   * <Note>
+When receiving messages through this function, tool call data is truncated for efficiency. The `arguments_string` is limited to 500 characters and `results` to 50 characters. The complete tool call data is always saved in storage and can be retrieved by calling {@linkcode getConversation | getConversation()} after the message completes.
+</Note>
    *
    * @param conversationId - The conversation ID to subscribe to.
    * @param onUpdate - Callback function called when the conversation is updated. The callback receives a conversation object with the following properties:
