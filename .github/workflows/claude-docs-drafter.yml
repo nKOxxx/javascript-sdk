@@ -1,0 +1,144 @@
+name: Claude Docs Drafter
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "src/modules/**"
+      - "src/client.types.ts"
+      - "src/types.ts"
+
+jobs:
+  claude-docs-draft:
+    if: |
+      github.actor != 'github-actions[bot]' && 
+      github.actor != 'claude-code[bot]' &&
+      github.actor != 'claude[bot]' &&
+      github.actor != 'claude'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Docs Drafter
+        id: claude-docs-drafter
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: "claude-sonnet-4-20250514"
+          use_sticky_comment: true
+
+          direct_prompt: |
+            You are a documentation drafter for the Base44 JavaScript SDK.
+
+            ## Your task
+
+            1. Read the documentation skill file at `.claude/skills/sdk-docs-writing/SKILL.md`. Follow its rules exactly.
+            2. Look at the changes in this PR (the diff of files under `src/modules/`, `src/client.types.ts`, and `src/types.ts`).
+            3. Identify any **new or modified public APIs** (interfaces, types, methods, properties) that are missing JSDoc or have incomplete JSDoc according to the skill's rules.
+            4. Check the existing `.types.ts` files in `src/modules/` and the generated docs in `docs/content/` to understand the established patterns and voice. Your suggestions must match these patterns.
+
+            ## How to report
+
+            Post a **single PR comment** with the following structure:
+
+            ### 📝 Documentation Draft
+
+            **Summary**
+            A brief overview of what new or changed public APIs were found in this PR and whether they need documentation. If everything is already documented, say so.
+
+            **Draft JSDoc**
+            For each public API that is missing or has incomplete JSDoc, provide the complete suggested JSDoc block. Group suggestions by file. Use this format:
+
+            ---
+
+            #### `src/modules/example.types.ts`
+
+            **`ExampleModule.myMethod`** — *New method, missing JSDoc entirely.*
+
+            ```typescript
+            /**
+             * Does something useful.
+             *
+             * @param id - The unique identifier. Defaults to `undefined`.
+             * @returns Promise resolving to the result object.
+             *
+             * @example
+             * ```typescript
+             * // Basic usage
+             * const result = await base44.example.myMethod('abc');
+             * ```
+             *
+             * @example
+             * ```typescript
+             * // With error handling
+             * try {
+             *   const result = await base44.example.myMethod('abc');
+             * } catch (error) {
+             *   console.error('Failed:', error);
+             * }
+             * ```
+             */
+            myMethod(id: string): Promise<Result>;
+            ```
+
+            ---
+
+            Include the original method/property signature at the bottom of each code block so the developer can see exactly where the JSDoc should be placed.
+
+            **Checklist**
+            End with this checklist for the developer and tech writer to verify:
+            - [ ] JSDoc completeness (description, `@param`, `@returns`, `@example`)
+            - [ ] `@internal` on implementation-only exports
+            - [ ] New types added to `types-to-expose.json` if needed
+            - [ ] Helper types added to `appended-articles.json` if needed
+            - [ ] Examples use `base44.` call path and are valid TypeScript
+
+            ## Rules
+            - Do NOT commit any changes to the PR branch. Only comment.
+            - Do NOT modify any files. You are read-only.
+            - Be specific and actionable. Don't give vague advice.
+            - For each suggestion, briefly state why it's needed (new API, missing `@example`, incomplete `@param` tags, etc.).
+            - Match the tone and style of existing JSDoc in the codebase.
+            - If a public API already has complete, correct JSDoc, skip it — don't suggest changes for the sake of it.
+
+      - name: Add docs-draft label
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create the label if it doesn't exist yet
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'docs-draft'
+              });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'docs-draft',
+                  color: '1D76DB',
+                  description: 'PR has auto-drafted documentation suggestions'
+                });
+              }
+            }
+
+            // Add the label to the PR
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['docs-draft']
+            });
