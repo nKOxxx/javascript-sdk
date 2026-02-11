@@ -27,17 +27,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Run Claude Docs Drafter
+        timeout-minutes: 10
         id: claude-docs-drafter
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: "claude-sonnet-4-20250514"
           use_sticky_comment: true
+          claude_args: |
+            --model claude-sonnet-4-20250514
+            --json-schema '{"type":"object","properties":{"needs_docs":{"type":"boolean","description":"true if the PR has public APIs that need new or improved JSDoc"}},"required":["needs_docs"]}'
 
-          direct_prompt: |
+          prompt: |
             You are a documentation drafter for the Base44 JavaScript SDK.
 
             ## Your task
@@ -103,6 +106,12 @@ jobs:
             - [ ] Helper types added to `appended-articles.json` if needed
             - [ ] Examples use `base44.` call path and are valid TypeScript
 
+            ## Structured output
+
+            You MUST return a structured output with the field `needs_docs`.
+            - Set `needs_docs` to `true` if you found any public APIs that need new or improved JSDoc.
+            - Set `needs_docs` to `false` if every public API already has complete, correct JSDoc and you have no suggestions.
+
             ## Rules
             - Do NOT commit any changes to the PR branch. Only comment.
             - Do NOT modify any files. You are read-only.
@@ -112,7 +121,7 @@ jobs:
             - If a public API already has complete, correct JSDoc, skip it — don't suggest changes for the sake of it.
 
       - name: Add docs-draft label
-        if: success()
+        if: success() && fromJSON(steps.claude-docs-drafter.outputs.structured_output).needs_docs == true
         uses: actions/github-script@v7
         with:
           script: |
