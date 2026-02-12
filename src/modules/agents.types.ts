@@ -3,6 +3,19 @@ import { RoomsSocket } from "../utils/socket-utils.js";
 import { ModelFilterParams } from "../types.js";
 
 /**
+ * Registry of agent names.
+ * Augment this interface to enable autocomplete for agent names.
+ */
+export interface AgentNameRegistry {}
+
+/**
+ * Agent name type - uses registry keys if augmented, otherwise string.
+ */
+export type AgentName = keyof AgentNameRegistry extends never
+  ? string
+  : keyof AgentNameRegistry;
+
+/**
  * Reasoning information for an agent message.
  *
  * Contains details about the agent's reasoning process when generating a response.
@@ -135,7 +148,7 @@ export interface AgentMessage {
  */
 export interface CreateConversationParams {
   /** The name of the agent to create a conversation with. */
-  agent_name: string;
+  agent_name: AgentName;
   /** Optional metadata to attach to the conversation. */
   metadata?: Record<string, any>;
 }
@@ -376,5 +389,5 @@ When receiving messages through this function, tool call data is truncated for e
    * // User can open this URL to start a WhatsApp conversation
    * ```
    */
-  getWhatsAppConnectURL(agentName: string): string;
+  getWhatsAppConnectURL(agentName: AgentName): string;
 }

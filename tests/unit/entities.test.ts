@@ -12,10 +12,10 @@ interface Todo {
   completed: boolean;
 }
 
-// Declaration merging: extend EntitiesModule with typed Todo handler
+// Module augmentation: register Todo type in EntityTypeRegistry
 declare module "../../src/modules/entities.types.ts" {
-  interface EntitiesModule {
-    Todo: EntityHandler<Todo>;
+  interface EntityTypeRegistry {
+    Todo: Todo;
   }
 }
 

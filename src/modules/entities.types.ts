@@ -81,6 +81,37 @@ export type SortField<T> =
   | `-${keyof T & string}`;
 
 /**
+ * Fields added by the server to every entity record (id, dates, created_by, etc.).
+ */
+interface ServerEntityFields {
+  /** Unique identifier of the record */
+  id: string;
+  /** ISO 8601 timestamp when the record was created */
+  created_date: string;
+  /** ISO 8601 timestamp when the record was last updated */
+  updated_date: string;
+  /** Email of the user who created the record (may be hidden in some responses) */
+  created_by?: string | null;
+  /** ID of the user who created the record */
+  created_by_id?: string | null;
+  /** Whether the record is sample/seed data */
+  is_sample?: boolean;
+}
+
+/**
+ * Registry mapping entity names to their TypeScript types.
+ * Augment this interface with your entity schema (user-defined fields only).
+ */
+export interface EntityTypeRegistry {}
+
+/**
+ * Full record type for each entity: schema fields + server-injected fields (id, created_date, etc.).
+ */
+export type EntityRecord = {
+  [K in keyof EntityTypeRegistry]: EntityTypeRegistry[K] & ServerEntityFields;
+};
+
+/**
  * Entity handler providing CRUD operations for a specific entity type.
  *
  * Each entity in the app gets a handler with these methods for managing data.
@@ -303,7 +334,7 @@ export interface EntityHandler<T = any> {
    *   status: 'completed',
    *   priority: 'low'
    * });
-   * console.log('Deleted:', result);
+   * console.log('Deleted:', result.deleted);
    * ```
    */
   deleteMany(query: Partial<T>): Promise<DeleteManyResult>;
@@ -383,6 +414,20 @@ export interface EntityHandler<T = any> {
 }
 
 /**
+ * Typed entities module - maps registry keys to typed handlers (full record type).
+ */
+type TypedEntitiesModule = {
+  [K in keyof EntityTypeRegistry]: EntityHandler<EntityRecord[K]>;
+};
+
+/**
+ * Dynamic entities module - allows any entity name with untyped handler.
+ */
+type DynamicEntitiesModule = {
+  [entityName: string]: EntityHandler<any>;
+};
+
+/**
  * Entities module for managing app data.
  *
  * This module provides dynamic access to all entities in the app.
@@ -415,18 +460,4 @@ export interface EntityHandler<T = any> {
  * const allUsers = await base44.asServiceRole.entities.User.list();
  * ```
  */
-export interface EntitiesModule {
-  /**
-   * Access any entity by name.
-   *
-   * Use this to access entities defined in the app.
-   *
-   * @example
-   * ```typescript
-   * // Access entities dynamically
-   * base44.entities.MyEntity
-   * base44.entities.AnotherEntity
-   * ```
-   */
-  [entityName: string]: EntityHandler<any>;
-}
+export type EntitiesModule = TypedEntitiesModule & DynamicEntitiesModule;

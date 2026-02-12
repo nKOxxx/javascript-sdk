@@ -36,6 +36,8 @@ export * from "./types.js";
 export type {
   EntitiesModule,
   EntityHandler,
+  EntityRecord,
+  EntityTypeRegistry,
   RealtimeEventType,
   RealtimeEvent,
   RealtimeCallback,
@@ -71,10 +73,14 @@ export type {
   CreateFileSignedUrlResult,
 } from "./modules/integrations.types.js";
 
-export type { FunctionsModule } from "./modules/functions.types.js";
+export type {
+  FunctionsModule,
+  FunctionNameRegistry,
+} from "./modules/functions.types.js";
 
 export type {
   AgentsModule,
+  AgentNameRegistry,
   AgentConversation,
   AgentMessage,
   AgentMessageReasoning,

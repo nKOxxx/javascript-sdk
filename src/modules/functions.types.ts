@@ -1,4 +1,17 @@
 /**
+ * Registry of function names.
+ * Augment this interface to enable autocomplete for function names.
+ */
+export interface FunctionNameRegistry {}
+
+/**
+ * Function name type - uses registry keys if augmented, otherwise string.
+ */
+export type FunctionName = keyof FunctionNameRegistry extends never
+  ? string
+  : keyof FunctionNameRegistry;
+
+/**
  * Functions module for invoking custom backend functions.
  *
  * This module allows you to invoke the custom backend functions defined in the app.
@@ -46,5 +59,5 @@ export interface FunctionsModule {
    * };
    * ```
    */
-  invoke(functionName: string, data: Record<string, any>): Promise<any>;
+  invoke(functionName: FunctionName, data?: Record<string, any>): Promise<any>;
 }
