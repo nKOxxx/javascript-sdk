@@ -1,7 +1,16 @@
 /**
- * The type of external integration/connector, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+ * Registry of connector integration types.
+ * Augment this interface to enable autocomplete for connector integration types.
  */
-export type ConnectorIntegrationType = string;
+export interface ConnectorIntegrationTypeRegistry {}
+
+/**
+ * The type of external integration/connector, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+ * Uses registry keys if augmented, otherwise falls back to string.
+ */
+export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry extends never
+  ? string
+  : keyof ConnectorIntegrationTypeRegistry;
 
 /**
  * Response from the connectors access token endpoint.
