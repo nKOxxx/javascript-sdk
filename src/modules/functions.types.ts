@@ -10,7 +10,7 @@ export interface FunctionNameRegistry {}
  * ```typescript
  * // Using generated function name types
  * // With generated types, you get autocomplete on function names
- * await base44.functions.invoke('sendEmail', { to: 'user@example.com' });
+ * await base44.functions.invoke('calculateTotal', { items: ['item1', 'item2'] });
  * ```
  */
 export type FunctionName = keyof FunctionNameRegistry extends never
