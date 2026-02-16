@@ -3,13 +3,19 @@ import { RoomsSocket } from "../utils/socket-utils.js";
 import { ModelFilterParams } from "../types.js";
 
 /**
- * Registry of agent names.
- * Augment this interface to enable autocomplete for agent names.
+ * Registry of agent names. The [`types generate`](/developers/references/cli/commands/types-generate) command fills this registry, then [`AgentName`](#agentname) resolves to a union of the keys.
  */
 export interface AgentNameRegistry {}
 
 /**
- * Agent name type - uses registry keys if augmented, otherwise string.
+ * Union of all agent names from the [`AgentNameRegistry`](#agentnameregistry). Defaults to `string` when no types have been generated.
+ *
+ * @example
+ * ```typescript
+ * // Using generated agent name types
+ * // With generated types, you get autocomplete on agent names
+ * const conversation = await base44.agents.createConversation({ agent_name: 'SupportBot' });
+ * ```
  */
 export type AgentName = keyof AgentNameRegistry extends never
   ? string
@@ -197,6 +203,9 @@ export interface AgentsModuleConfig {
  * - **Anonymous or User authentication** (`base44.agents`): Access is scoped to the current user's permissions. Users must be authenticated to create and access conversations.
  * - **Service role authentication** (`base44.asServiceRole.agents`): Operations have elevated admin-level permissions. Can access all conversations that the app's admin role has access to.
  *
+ * ## Generated Types
+ *
+ * If you're working in a TypeScript project, you can generate types from your agents to get autocomplete on agent names when creating conversations or subscribing to updates. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  */
 export interface AgentsModule {
   /**
@@ -222,7 +231,7 @@ export interface AgentsModule {
    * Gets a specific conversation by ID.
    *
    * Retrieves a single conversation using its unique identifier. To retrieve
-   * all conversations, use {@linkcode getConversations | getConversations()} To filter, sort, or paginate conversations, use {@linkcode listConversations | listConversations()}.
+   * all conversations, use {@linkcode getConversations | getConversations()}. To filter, sort, or paginate conversations, use {@linkcode listConversations | listConversations()}.
    *
    * This function returns the complete stored conversation including full tool call results, even for large responses.
    *
@@ -339,8 +348,8 @@ export interface AgentsModule {
    * to clean up the connection.
    * 
    * <Note>
-When receiving messages through this function, tool call data is truncated for efficiency. The `arguments_string` is limited to 500 characters and `results` to 50 characters. The complete tool call data is always saved in storage and can be retrieved by calling {@linkcode getConversation | getConversation()} after the message completes.
-</Note>
+   * When receiving messages through this function, tool call data is truncated for efficiency. The `arguments_string` is limited to 500 characters and `results` to 50 characters. The complete tool call data is always saved in storage and can be retrieved by calling {@linkcode getConversation | getConversation()} after the message completes.
+   * </Note>
    *
    * @param conversationId - The conversation ID to subscribe to.
    * @param onUpdate - Callback function called when the conversation is updated. The callback receives a conversation object with the following properties:

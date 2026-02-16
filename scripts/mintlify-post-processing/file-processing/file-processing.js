@@ -25,6 +25,7 @@ const TEMPLATE_PATH = path.join(__dirname, "docs-json-template.json");
 const STYLING_CSS_PATH = path.join(__dirname, "styling.css");
 const CATEGORY_MAP_PATH = path.join(__dirname, "../category-map.json");
 const TYPES_TO_EXPOSE_PATH = path.join(__dirname, "..", "types-to-expose.json");
+const TYPES_TO_DELETE_PATH = path.join(__dirname, "..", "types-to-delete-after-processing.json");
 const APPENDED_ARTICLES_PATH = path.join(
   __dirname,
   "../appended-articles.json"
@@ -135,9 +136,11 @@ function processLinksInFile(filePath) {
     modified = true;
   }
 
-  // Remove undesirable lines like "> **IntegrationsModule** = `object` & `object`"
-  // This typically appears in type alias files using intersection types
-  const typeDefinitionRegex = /^> \*\*\w+\*\* = `object` & `object`\s*$/m;
+  // Remove undesirable type-alias definition lines like:
+  //   > **IntegrationsModule** = `object` & `object`
+  //   > **EntitiesModule** = `TypedEntitiesModule` & `DynamicEntitiesModule`
+  // These appear in type alias files using intersection types and are not useful in docs.
+  const typeDefinitionRegex = /^> \*\*\w+\*\* = `\w+` & `\w+`\s*$/m;
   if (typeDefinitionRegex.test(content)) {
     content = content.replace(typeDefinitionRegex, "");
     modified = true;
@@ -761,6 +764,255 @@ function applyAppendedArticles(appendedArticles) {
   }
 }
 
+/**
+ * Clean up method signatures and type parameter sections:
+ * 1. Replace truncated generics (e.g., Pick<..., ...> → Pick<T, K>)
+ * 2. Simplify resolved keyof constraints (string | number | symbol → keyof T)
+ * 3. Break long signature lines into multi-line blockquote format
+ * 4. Remove method-level Type Parameters sections (redundant with signature + param docs)
+ * 4b. Remove page-level ## Type Parameters sections (not useful in docs)
+ * 5. Clean up broken function-return-type sections (e.g., () => void returns)
+ * 7. Simplify field-selection generics: remove \<K\> from signatures, Pick<T,K> → T, K[] → (keyof T)[]
+ */
+function cleanupSignatures(content) {
+  let modified = false;
+
+  // Fix 7: Simplify field-selection generic K out of signatures.
+  // K is a TypeScript implementation detail for field selection (Pick<T, K>).
+  // In docs it's confusing — replace with clearer types.
+
+  // 7a: Annotate \<`K`\> with its constraint → \<`K extends keyof T`\>
+  if (content.includes("\\<`K`\\>")) {
+    content = content.replace(/\\<`K`\\>/g, "\\<`K extends keyof T`\\>");
+    modified = true;
+  }
+
+  // 7b: Expand truncated `Pick`\<..., ...\> to `Pick`\<`T`, `K`\>
+  if (content.includes("`Pick`\\<..., ...\\>")) {
+    content = content.replace(/`Pick`\\<\.\.\., \.\.\.\\>/g, "`Pick`\\<`T`, `K`\\>");
+    modified = true;
+  }
+
+  // 7c: Replace type="K[]" with type="(keyof T)[]" in ParamField elements
+  if (content.includes('type="K[]"')) {
+    content = content.replace(/type="K\[\]"/g, 'type="(keyof T)[]"');
+    modified = true;
+  }
+
+  // Fix 5: Clean up broken function-return-type patterns.
+  // When a method returns a function (e.g., () => void), TypeDoc generates a stray
+  // function signature and an empty Accordion in the Returns section. Remove them.
+  // Pattern: "> (): `void`" followed by empty Accordion with "Returns" ResponseField.
+  content = content.replace(
+    /\n> \(\): `void`\n\n<Accordion title="Properties">\n\n<ResponseField name="Returns" type="void" required>\n\n<\/ResponseField>\n<\/Accordion>\n/g,
+    () => {
+      modified = true;
+      return "\n";
+    }
+  );
+
+  // Fix 6: Clean up truncated EntityRecord mapped type signature.
+  // TypeDoc renders `EntityTypeRegistry[K]` as `(...)[(...)]`.
+  content = content.replace(
+    /\(\.\.\.\)\[\(\.\.\.\)\]\s*&\s*ServerEntityFields/g,
+    () => {
+      modified = true;
+      return "EntityTypeRegistry[K] & ServerEntityFields";
+    }
+  );
+
+  const lines = content.split("\n");
+
+  // Collect page-level type parameter names from ## Type Parameters section.
+  // Before heading demotion, these are ### headings (e.g., ### T).
+  const pageTypeParams = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === "## Type Parameters") {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].startsWith("## ") && lines[j].trim() !== "## Type Parameters")
+          break;
+        const paramMatch = lines[j].match(/^#{3,5}\s+(\w+)\s*$/);
+        if (paramMatch) {
+          pageTypeParams.push(paramMatch[1]);
+        }
+      }
+      break;
+    }
+  }
+
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Fix 1: Replace `string` | `number` | `symbol` with keyof `T`
+    // TypeDoc resolves `keyof T` to `string | number | symbol` when T is unconstrained.
+    if (line.includes("`string` | `number` | `symbol`")) {
+      const defaultMatch = line.match(/= keyof `(\w+)`/);
+      const typeName =
+        defaultMatch ? defaultMatch[1] : pageTypeParams[0] || "T";
+      line = line.replace(
+        /`string` \| `number` \| `symbol`( = keyof `\w+`)?/,
+        "keyof `" + typeName + "`"
+      );
+      modified = true;
+    }
+
+    // Fix 4b: Remove page-level ## Type Parameters sections.
+    // These are not useful in docs — generic type params are an implementation detail.
+    // Skip from "## Type Parameters" until the next "## " heading.
+    if (line.trim() === "## Type Parameters") {
+      let j = i + 1;
+      while (j < lines.length) {
+        const upcoming = lines[j].trim();
+        if (upcoming.startsWith("## ") && upcoming !== "## Type Parameters") break;
+        j++;
+      }
+      // Skip trailing blank lines
+      while (j > i + 1 && lines[j - 1].trim() === "") {
+        j--;
+      }
+      i = j - 1;
+      modified = true;
+      continue;
+    }
+
+    // Fix 4: Remove method-level #### Type Parameters sections.
+    // These are redundant — the info is already in the signature and parameter docs.
+    // Skip from "#### Type Parameters" until the next "#### " heading.
+    if (line.trim() === "#### Type Parameters") {
+      // Skip ahead past this section until the next #### heading or ### heading
+      let j = i + 1;
+      while (j < lines.length) {
+        const upcoming = lines[j].trim();
+        if (upcoming.startsWith("#### ") && upcoming !== "#### Type Parameters") break;
+        if (upcoming.startsWith("### ")) break;
+        if (upcoming.startsWith("## ")) break;
+        j++;
+      }
+      // Also skip any trailing blank lines
+      while (j > i + 1 && lines[j - 1].trim() === "") {
+        j--;
+      }
+      i = j - 1; // -1 because the loop will increment
+      modified = true;
+      continue;
+    }
+
+    // Fix 2 & 3: Signatures starting with > **methodName**
+    if (line.startsWith("> **") && line.includes("(")) {
+      // Extract method-level type params from signature (e.g., \<`K`\>)
+      const methodTypeParams = [];
+      const typeParamMatch = line.match(/\\<`(\w+)`\\>/);
+      if (typeParamMatch) {
+        methodTypeParams.push(typeParamMatch[1]);
+      }
+
+      // Replace truncated generics: \<..., ...\> → \<`T`, `K`\>
+      if (line.includes("\\<..., ...\\>")) {
+        const allTypeParams = [...pageTypeParams, ...methodTypeParams];
+        if (allTypeParams.length >= 2) {
+          line = line.replace(
+            /\\<\.\.\., \.\.\.\\>/g,
+            "\\<`" + allTypeParams[0] + "`, `" + allTypeParams[1] + "`\\>"
+          );
+          modified = true;
+        }
+      }
+
+      // Break long signatures into multi-line blockquote format.
+      // Each line ends with two trailing spaces to force a hard line break
+      // in Mintlify's Markdown renderer (otherwise blockquote lines get joined).
+      if (line.length > 85) {
+        const openParen = line.indexOf("(");
+        const returnMarker = line.lastIndexOf("): ");
+
+        if (openParen > -1 && returnMarker > openParen) {
+          const prefix = line.slice(0, openParen);
+          const params = line.slice(openParen + 1, returnMarker);
+          const returnType = line.slice(returnMarker + 1);
+
+          const paramList = params.split(", ");
+          if (paramList.length >= 3) {
+            result.push(prefix + "(  ");
+            for (let j = 0; j < paramList.length; j++) {
+              const comma = j < paramList.length - 1 ? "," : "";
+              result.push(">   " + paramList[j] + comma + "  ");
+            }
+            result.push("> )" + returnType);
+            modified = true;
+            continue;
+          }
+        }
+      }
+    }
+
+    result.push(line);
+  }
+
+  // Fix 6: Enrich bare type names in Returns sections with generics from signatures.
+  // E.g., `ImportResult` → `ImportResult<T>` when the signature shows ImportResult\<T\>.
+  for (let i = 0; i < result.length; i++) {
+    const line = result[i];
+    // Match a standalone backtick-wrapped type name (only content on the line)
+    const bareTypeMatch = line.match(/^`([A-Z]\w+)`$/);
+    if (!bareTypeMatch) continue;
+    const typeName = bareTypeMatch[1];
+
+    // Verify this follows a Returns heading (scan back past blank lines)
+    let isInReturns = false;
+    for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+      if (result[j].trim() === "") continue;
+      if (/^#{2,5} Returns/.test(result[j])) {
+        isInReturns = true;
+      }
+      break;
+    }
+    if (!isInReturns) continue;
+
+    // Scan backwards for the nearest signature line
+    for (let j = i - 1; j >= Math.max(0, i - 30); j--) {
+      const sigLine = result[j];
+      if (!sigLine.startsWith("> **") && !sigLine.startsWith("> )")) continue;
+      // Look for TypeName\<`GenericParam`\> in the signature
+      const genericPattern = new RegExp(
+        "`" + typeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+        "`\\\\<`(\\w+)`\\\\>"
+      );
+      const genMatch = sigLine.match(genericPattern);
+      if (genMatch) {
+        result[i] = "`" + typeName + "<" + genMatch[1] + ">`";
+        modified = true;
+      }
+      break;
+    }
+  }
+
+  return { content: result.join("\n"), modified };
+}
+
+function applySignatureCleanup(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      applySignatureCleanup(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      const content = fs.readFileSync(entryPath, "utf-8");
+      const { content: updated, modified } = cleanupSignatures(content);
+      if (modified) {
+        fs.writeFileSync(entryPath, updated, "utf-8");
+        console.log(
+          `Cleaned up signatures: ${path.relative(DOCS_DIR, entryPath)}`
+        );
+      }
+    }
+  }
+}
+
 function demoteNonCallableHeadings(content) {
   const lines = content.split("\n");
   let inFence = false;
@@ -967,6 +1219,48 @@ function applyNonExposedTypeLinkRemoval(dir, exposedTypeNames) {
 /**
  * Main function
  */
+/**
+ * Delete types that should not appear in navigation but were needed for inline rendering.
+ * These types are listed in types-to-delete-after-processing.json
+ */
+function deleteTypesAfterProcessing(docsDir) {
+  let typesToDelete = new Set();
+  try {
+    const content = fs.readFileSync(TYPES_TO_DELETE_PATH, "utf-8");
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) {
+      typesToDelete = new Set(parsed);
+    }
+  } catch (e) {
+    // No types to delete, that's fine
+    return;
+  }
+
+  if (typesToDelete.size === 0) {
+    return;
+  }
+
+  const contentDir = path.join(docsDir, "content");
+  const sections = ["functions", "interfaces", "classes", "type-aliases"];
+
+  for (const section of sections) {
+    const sectionDir = path.join(contentDir, section);
+    if (!fs.existsSync(sectionDir)) continue;
+
+    const files = fs.readdirSync(sectionDir);
+    for (const file of files) {
+      if (!file.endsWith(".mdx") && !file.endsWith(".md")) continue;
+      
+      const fileName = path.basename(file, path.extname(file));
+      if (typesToDelete.has(fileName)) {
+        const filePath = path.join(sectionDir, file);
+        fs.unlinkSync(filePath);
+        console.log(`Removed (after processing): content/${section}/${file}`);
+      }
+    }
+  }
+}
+
 function main() {
   console.log("Processing TypeDoc MDX files for Mintlify...\n");
 
@@ -990,6 +1284,9 @@ function main() {
   const appendedArticles = loadAppendedArticlesConfig();
   applyAppendedArticles(appendedArticles);
 
+  // Clean up signatures: fix truncated generics, simplify keyof constraints, break long lines
+  applySignatureCleanup(DOCS_DIR);
+
   applyHeadingDemotion(DOCS_DIR);
 
   // Link type names in Type Declarations sections to their corresponding headings
@@ -997,6 +1294,9 @@ function main() {
 
   // Remove links to types that aren't exposed (would 404)
   applyNonExposedTypeLinkRemoval(DOCS_DIR, exposedTypeNames);
+
+  // Delete types that should not appear in navigation but were needed for inline rendering
+  deleteTypesAfterProcessing(DOCS_DIR);
 
   // Clean up the linked types file
   try {

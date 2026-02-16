@@ -30,7 +30,7 @@ export type RealtimeCallback<T = any> = (event: RealtimeEvent<T>) => void;
  * Result returned when deleting a single entity.
  */
 export interface DeleteResult {
-  /** Whether the deletion was successful */
+  /** Whether the deletion was successful. */
   success: boolean;
 }
 
@@ -38,9 +38,9 @@ export interface DeleteResult {
  * Result returned when deleting multiple entities.
  */
 export interface DeleteManyResult {
-  /** Whether the deletion was successful */
+  /** Whether the deletion was successful. */
   success: boolean;
-  /** Number of entities that were deleted */
+  /** Number of entities that were deleted. */
   deleted: number;
 }
 
@@ -50,11 +50,11 @@ export interface DeleteManyResult {
  * @typeParam T - The entity type for imported records. Defaults to `any`.
  */
 export interface ImportResult<T = any> {
-  /** Status of the import operation */
+  /** Status of the import operation. */
   status: "success" | "error";
-  /** Details message, e.g., "Successfully imported 3 entities with RLS enforcement" */
+  /** Details message, e.g., "Successfully imported 3 entities with RLS enforcement". */
   details: string | null;
-  /** Array of created entity objects when successful, or null on error */
+  /** Array of created entity objects when successful, or null on error. */
   output: T[] | null;
 }
 
@@ -99,13 +99,30 @@ interface ServerEntityFields {
 }
 
 /**
- * Registry mapping entity names to their TypeScript types.
- * Augment this interface with your entity schema (user-defined fields only).
+ * Registry mapping entity names to their TypeScript types. The [`types generate`](/developers/references/cli/commands/types-generate) command fills this registry, then [`EntityRecord`](#entityrecord) adds server fields.
  */
 export interface EntityTypeRegistry {}
 
 /**
- * Full record type for each entity: schema fields + server-injected fields (id, created_date, etc.).
+ * Combines the [`EntityTypeRegistry`](#entitytyperegistry) schemas with server fields like `id`, `created_date`, and `updated_date` to give the complete record type for each entity. Use this when you need to type variables holding entity data.
+ *
+ * @example
+ * ```typescript
+ * import type { EntityRecord } from '@base44/sdk';
+ *
+ * // Combine your schema with server fields (id, created_date, etc.)
+ * type TaskRecord = EntityRecord['Task'];
+ *
+ * const task: TaskRecord = await base44.entities.Task.create({
+ *   title: 'My task',
+ *   status: 'pending'
+ * });
+ *
+ * // Task now includes both your fields and server fields:
+ * console.log(task.id);           // Server field
+ * console.log(task.created_date); // Server field
+ * console.log(task.title);        // Your field
+ * ```
  */
 export type EntityRecord = {
   [K in keyof EntityTypeRegistry]: EntityTypeRegistry[K] & ServerEntityFields;
@@ -163,7 +180,7 @@ export interface EntityHandler<T = any> {
     sort?: SortField<T>,
     limit?: number,
     skip?: number,
-    fields?: K[]
+    fields?: K[],
   ): Promise<Pick<T, K>[]>;
 
   /**
@@ -229,7 +246,7 @@ export interface EntityHandler<T = any> {
     sort?: SortField<T>,
     limit?: number,
     skip?: number,
-    fields?: K[]
+    fields?: K[],
   ): Promise<Pick<T, K>[]>;
 
   /**
@@ -436,7 +453,7 @@ type DynamicEntitiesModule = {
  * Entities are accessed dynamically using the pattern:
  * `base44.entities.EntityName.method()`
  *
- * This module is available to use with a client in all three authentication modes:
+ * This module is available to use with a client in all authentication modes:
  *
  * - **Anonymous or User authentication** (`base44.entities`): Access is scoped to the current user's permissions. Anonymous users can only access public entities, while authenticated users can access entities they have permission to view or modify.
  * - **Service role authentication** (`base44.asServiceRole.entities`): Operations have elevated admin-level permissions. Can access all entities that the app's admin role has access to.
@@ -446,6 +463,10 @@ type DynamicEntitiesModule = {
  * Every app includes a built-in `User` entity that stores user account information. This entity has special security rules that can't be changed.
  *
  * Regular users can only read and update their own user record. With service role authentication, you can read, update, and delete any user. You can't create users using the entities module. Instead, use the functions of the {@link AuthModule | auth module} to invite or register new users.
+ *
+ * ## Generated Types
+ *
+ * If you're working in a TypeScript project, you can generate types from your entity schemas to get autocomplete and type checking on all entity methods. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  *
  * @example
  * ```typescript

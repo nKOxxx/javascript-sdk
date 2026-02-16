@@ -1,12 +1,17 @@
 /**
- * Registry of connector integration types.
- * Augment this interface to enable autocomplete for connector integration types.
+ * Registry of connector integration type names. The [`types generate`](/developers/references/cli/commands/types-generate) command fills this registry, then [`ConnectorIntegrationType`](#connectorintegrationtype) resolves to a union of the keys.
  */
 export interface ConnectorIntegrationTypeRegistry {}
 
 /**
- * The type of external integration/connector, such as `'googlecalendar'`, `'slack'`, or `'github'`.
- * Uses registry keys if augmented, otherwise falls back to string.
+ * Union of all connector integration type names from the [`ConnectorIntegrationTypeRegistry`](#connectorintegrationtyperegistry). Defaults to `string` when no types have been generated.
+ *
+ * @example
+ * ```typescript
+ * // Using generated connector type names
+ * // With generated types, you get autocomplete on integration types
+ * const token = await base44.asServiceRole.connectors.getAccessToken('googlecalendar');
+ * ```
  */
 export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry extends never
   ? string
@@ -30,6 +35,10 @@ export interface ConnectorAccessTokenResponse {
  * covered by Base44's pre-built integrations.
  *
  * This module is only available to use with a client in service role authentication mode, which means it can only be used in backend environments.
+ *
+ * ## Dynamic Types
+ *
+ * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names when calling `getAccessToken()`. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  */
 export interface ConnectorsModule {
   /**
