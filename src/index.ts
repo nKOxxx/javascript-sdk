@@ -34,10 +34,13 @@ export * from "./types.js";
 
 // Module types
 export type {
+  DeleteManyResult,
+  DeleteResult,
   EntitiesModule,
   EntityHandler,
   EntityRecord,
   EntityTypeRegistry,
+  ImportResult,
   RealtimeEventType,
   RealtimeEvent,
   RealtimeCallback,
@@ -75,11 +78,13 @@ export type {
 
 export type {
   FunctionsModule,
+  FunctionName,
   FunctionNameRegistry,
 } from "./modules/functions.types.js";
 
 export type {
   AgentsModule,
+  AgentName,
   AgentNameRegistry,
   AgentConversation,
   AgentMessage,

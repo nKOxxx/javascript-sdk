@@ -1,11 +1,17 @@
 /**
- * Registry of function names.
- * Augment this interface to enable autocomplete for function names.
+ * Registry of function names. The [`types generate`](/developers/references/cli/commands/types-generate) command fills this registry, then [`FunctionName`](#functionname) resolves to a union of the keys.
  */
 export interface FunctionNameRegistry {}
 
 /**
- * Function name type - uses registry keys if augmented, otherwise string.
+ * Union of all function names from the [`FunctionNameRegistry`](#functionnameregistry). Defaults to `string` when no types have been generated.
+ *
+ * @example
+ * ```typescript
+ * // Using generated function name types
+ * // With generated types, you get autocomplete on function names
+ * await base44.functions.invoke('sendEmail', { to: 'user@example.com' });
+ * ```
  */
 export type FunctionName = keyof FunctionNameRegistry extends never
   ? string
@@ -20,6 +26,10 @@ export type FunctionName = keyof FunctionNameRegistry extends never
  *
  * - **Anonymous or User authentication** (`base44.functions`): Functions are invoked with the current user's permissions. Anonymous users invoke functions without authentication, while authenticated users invoke functions with their authentication context.
  * - **Service role authentication** (`base44.asServiceRole.functions`): Functions are invoked with elevated admin-level permissions. The function code receives a request with admin authentication context.
+ *
+ * ## Generated Types
+ *
+ * If you're working in a TypeScript project, you can generate types from your backend functions to get autocomplete on function names when calling `invoke()`. See the [Generated Types](/developers/references/sdk/getting-started/generated-types) guide to get started.
  */
 export interface FunctionsModule {
   /**

@@ -297,6 +297,23 @@ export function convertClassMethodReturns(
   });
 }
 
+/**
+ * If the full return type from the signature contains the type name with generic
+ * parameters (e.g., "Promise<ImportResult<T>>"), enrich the display name to include
+ * those generics (e.g., "ImportResult" → "ImportResult<T>").
+ */
+function enrichTypeNameWithGenerics(typeName, returnTypeFromSignature) {
+  if (!typeName || !returnTypeFromSignature) return typeName;
+  const escaped = typeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const genericMatch = returnTypeFromSignature.match(
+    new RegExp(escaped + "<([^>]+)>")
+  );
+  if (genericMatch) {
+    return `${typeName}<${genericMatch[1]}>`;
+  }
+  return typeName;
+}
+
 function rewriteReturnSections(content, options) {
   const {
     heading,
@@ -405,7 +422,10 @@ function rewriteReturnSections(content, options) {
         if (fields.length === 0 && !indexSignature) {
           result.push(...sectionLines);
         } else {
-          const typeNameForDisplay = extractedTypeName || returnTypeName;
+          const typeNameForDisplay = enrichTypeNameWithGenerics(
+            extractedTypeName || returnTypeName,
+            returnTypeFromSignature
+          );
           if (typeNameForDisplay) {
             result.push("");
             result.push(`\`${typeNameForDisplay}\``);
@@ -500,7 +520,10 @@ function rewriteReturnSections(content, options) {
       if (fields.length === 0 && !indexSignature) {
         result.push(...sectionLines);
       } else {
-        const typeNameForDisplay = extractedTypeName || returnTypeName;
+        const typeNameForDisplay = enrichTypeNameWithGenerics(
+          extractedTypeName || returnTypeName,
+          returnTypeFromSignature
+        );
         if (typeNameForDisplay) {
           result.push("");
           result.push(`\`${typeNameForDisplay}\``);
@@ -1035,13 +1058,16 @@ function formatReturnFieldsOutput(
 
   const isSingleSimpleField =
     fields.length === 1 &&
+    fields[0].name === "result" &&
     (!fields[0].nested || fields[0].nested.length === 0) &&
     !indexSignature;
 
   if (isSingleSimpleField) {
-    // For a single, non-object field, we only need to return its description text.
-    // The type is already rendered separately (`typeNameForDisplay`), so avoid wrapping
-    // it in a ResponseField to keep the output concise.
+    // For a single, non-object field with the default "result" name, we only need to
+    // return its description text. The type is already rendered separately
+    // (`typeNameForDisplay`), so avoid wrapping it in a ResponseField to keep the
+    // output concise. Fields with actual property names (e.g., extracted from a linked
+    // type like DeleteResult) should still get proper ResponseField rendering.
     return fields[0].description || "";
   }
 
@@ -1067,30 +1093,16 @@ function formatReturnFieldsOutput(
     return "";
   }
 
-  const hasMultipleFields = fields.length > 1;
-  const hasNestedFields = fields.some(
-    (field) => Array.isArray(field.nested) && field.nested.length > 0
-  );
-
-  if (hasMultipleFields || hasNestedFields || indexSignature) {
-    // Extract the simple type name to display above the Accordion
-    let typeDisplay = "";
-    if (returnType) {
-      const simpleTypeName = getSimpleTypeName(returnType);
-      if (simpleTypeName && !PRIMITIVE_TYPES.includes(simpleTypeName)) {
-        typeDisplay = `\`${simpleTypeName}\`\n\n`;
-      }
+  // Extract the simple type name to display above the Accordion
+  let typeDisplay = "";
+  if (returnType) {
+    const simpleTypeName = getSimpleTypeName(returnType);
+    if (simpleTypeName && !PRIMITIVE_TYPES.includes(simpleTypeName)) {
+      typeDisplay = `\`${simpleTypeName}\`\n\n`;
     }
-    // If we still don't have a type display and have multiple fields,
-    // try to infer from the context (e.g., if all fields are from the same type)
-    if (!typeDisplay && hasMultipleFields && fields.length > 0) {
-      // Check if we can get a type hint from the first field's description or context
-      // This is a fallback for cases where returnType wasn't passed correctly
-    }
-    return `${typeDisplay}<Accordion title="Properties">\n\n${fieldsBlock}${indexSignatureBlock}\n</Accordion>`;
   }
 
-  return fieldsBlock + indexSignatureBlock;
+  return `${typeDisplay}<Accordion title="Properties">\n\n${fieldsBlock}${indexSignatureBlock}\n</Accordion>`;
 }
 
 function renderNestedResponseFields(
