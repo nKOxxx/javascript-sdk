@@ -49,7 +49,6 @@ export interface FunctionsModule {
    * // Basic function call
    * const result = await base44.functions.invoke('calculateTotal', {
    *   items: ['item1', 'item2'],
-   *   discount: 0.1
    * });
    * console.log(result.data.total);
    * ```
