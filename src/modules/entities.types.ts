@@ -108,10 +108,7 @@ export interface EntityTypeRegistry {}
  *
  * @example
  * ```typescript
- * // Type-safe entity records
  * import type { EntityRecord } from '@base44/sdk';
- * // Import your generated entity schema
- * import type { Task } from '@/base44/.types/types';
  *
  * // Combine your schema with server fields (id, created_date, etc.)
  * type TaskRecord = EntityRecord['Task'];
@@ -469,7 +466,7 @@ type DynamicEntitiesModule = {
  *
  * ## Generated Types
  *
- * If you're working in a TypeScript project, you can generate types from your entity schemas to get autocomplete and type checking on all entity methods. See the [Generated Types](/developers/references/sdk/getting-started/generated-types) guide to get started.
+ * If you're working in a TypeScript project, you can generate types from your entity schemas to get autocomplete and type checking on all entity methods. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  *
  * @example
  * ```typescript

@@ -205,7 +205,7 @@ export interface AgentsModuleConfig {
  *
  * ## Generated Types
  *
- * If you're working in a TypeScript project, you can generate types from your agents to get autocomplete on agent names when creating conversations or subscribing to updates. See the [Generated Types](/developers/references/sdk/getting-started/generated-types) guide to get started.
+ * If you're working in a TypeScript project, you can generate types from your agents to get autocomplete on agent names when creating conversations or subscribing to updates. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  */
 export interface AgentsModule {
   /**
