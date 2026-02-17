@@ -193,9 +193,10 @@ export interface AuthModule {
    * Supported providers:
    * - `'google'` - {@link https://developers.google.com/identity/protocols/oauth2 | Google OAuth}. Enabled by default.
    * - `'microsoft'` - {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable Microsoft in your app's authentication settings before specifying this provider.
-   * - `'facebook'` - {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable this in your app's authentication settings before using.
+   * - `'facebook'` - {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable Facebook in your app's authentication settings before using.
+   * - `'apple'` - {@link https://developer.apple.com/sign-in-with-apple/ | Sign in with Apple}. Enable Apple in your app's authentication settings before using this provider.
    *
-   * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, or `'facebook'`.
+   * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, `'facebook'`, or `'apple'`.
    * @param fromUrl - URL to redirect to after successful authentication. Defaults to `'/'`.
    *
    * @example
@@ -208,6 +209,12 @@ export interface AuthModule {
    * ```typescript
    * // Login with Microsoft and redirect to dashboard
    * base44.auth.loginWithProvider('microsoft', '/dashboard');
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Login with Apple
+   * base44.auth.loginWithProvider('apple', '/dashboard');
    * ```
    */
   loginWithProvider(provider: string, fromUrl?: string): void;
