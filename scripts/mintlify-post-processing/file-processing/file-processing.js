@@ -361,6 +361,7 @@ function generateDocsJson(docsContent) {
   if (docsContent.functions.length > 0 && categoryMap.functions) {
     groups.push({
       group: getGroupName("functions", categoryMap),
+      expanded: true,
       pages: docsContent.functions,
     });
   }
@@ -368,6 +369,7 @@ function generateDocsJson(docsContent) {
   if (docsContent.interfaces.length > 0 && categoryMap.interfaces) {
     groups.push({
       group: getGroupName("interfaces", categoryMap),
+      expanded: true,
       pages: docsContent.interfaces,
     });
   }
@@ -375,6 +377,7 @@ function generateDocsJson(docsContent) {
   if (docsContent.classes.length > 0 && categoryMap.classes) {
     groups.push({
       group: getGroupName("classes", categoryMap),
+      expanded: true,
       pages: docsContent.classes,
     });
   }
@@ -391,6 +394,7 @@ function generateDocsJson(docsContent) {
     } else {
       groups.push({
         group: groupName,
+        expanded: true,
         pages: docsContent.typeAliases,
       });
     }
