@@ -201,19 +201,19 @@ export interface AuthModule {
    *
    * @example
    * ```typescript
-   * // Login with Google and return to current page
+   * // Google
    * base44.auth.loginWithProvider('google', window.location.pathname);
    * ```
    *
    * @example
    * ```typescript
-   * // Login with Microsoft and redirect to dashboard
+   * // Microsoft
    * base44.auth.loginWithProvider('microsoft', '/dashboard');
    * ```
    *
    * @example
    * ```typescript
-   * // Login with Apple
+   * // Apple
    * base44.auth.loginWithProvider('apple', '/dashboard');
    * ```
    */
