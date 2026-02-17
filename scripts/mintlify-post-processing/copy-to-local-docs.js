@@ -151,6 +151,7 @@ function updateDocsJson(repoDir, sdkFiles) {
   const sdkReferencePages = Array.from(groupMap.entries()).map(
     ([groupName, pages]) => ({
       group: groupName,
+      expanded: true,
       pages: pages.sort(), // Sort pages alphabetically within each group
     })
   );
