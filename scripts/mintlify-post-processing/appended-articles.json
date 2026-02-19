@@ -2,7 +2,8 @@
   "type-aliases/EntitiesModule": [
     "interfaces/EntityHandler",
     "type-aliases/EntityRecord",
-    "interfaces/EntityTypeRegistry"
+    "interfaces/EntityTypeRegistry",
+    "type-aliases/SortField"
   ],
   "interfaces/FunctionsModule": [
     "type-aliases/FunctionName",
