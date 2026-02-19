@@ -61,13 +61,16 @@ export interface ImportResult<T = any> {
 /**
  * Sort field type for entity queries.
  *
- * Supports ascending (no prefix or `'+'`) and descending (`'-'`) sorting.
+ * Accepts any field name from the entity type with an optional prefix:
+ * - `'+'` prefix or no prefix: ascending sort
+ * - `'-'` prefix: descending sort
  *
  * @typeParam T - The entity type to derive sortable fields from.
  *
  * @example
  * ```typescript
- * // Ascending sort (default)
+ * // Specify sort direction by prefixing field names with + or -
+ * // Ascending sort
  * 'created_date'
  * '+created_date'
  *
@@ -81,7 +84,7 @@ export type SortField<T> =
   | `-${keyof T & string}`;
 
 /**
- * Fields added by the server to every entity record (id, dates, created_by, etc.).
+ * Fields added by the server to every entity record, such as `id`, `created_date`, `updated_date`, and `created_by`.
  */
 interface ServerEntityFields {
   /** Unique identifier of the record */
@@ -108,8 +111,7 @@ export interface EntityTypeRegistry {}
  *
  * @example
  * ```typescript
- * import type { EntityRecord } from '@base44/sdk';
- *
+ * // Using EntityRecord to get the complete type for an entity
  * // Combine your schema with server fields (id, created_date, etc.)
  * type TaskRecord = EntityRecord['Task'];
  *

@@ -289,7 +289,23 @@ function parseParametersWithExpansion(
     if (!line) return null;
     const trimmed = line.trim();
 
-    // Handle [`TypeName`](link) format first (backticks inside the link)
+    // Handle [`TypeName`](link)\<`T`\> format (with generics after the link)
+    const linkWithBackticksAndGenericsMatch = trimmed.match(/^\[`([^`]+)`\]\(([^)]+)\)(.*)$/);
+    if (linkWithBackticksAndGenericsMatch) {
+      const typeName = linkWithBackticksAndGenericsMatch[1];
+      const link = linkWithBackticksAndGenericsMatch[2];
+      const generics = linkWithBackticksAndGenericsMatch[3].trim();
+      
+      // If there are generics, append them to the type name (cleaning up markdown escapes)
+      const fullType = generics ? typeName + generics.replace(/\\/g, '') : typeName;
+      
+      return {
+        type: fullType,
+        link: link,
+      };
+    }
+
+    // Handle [`TypeName`](link) format (backticks inside the link, no generics)
     const linkWithBackticksMatch = trimmed.match(/^\[`([^`]+)`\]\(([^)]+)\)$/);
     if (linkWithBackticksMatch) {
       return {
@@ -518,6 +534,7 @@ function parseParametersWithExpansion(
     params.push({
       name: cleanName,
       type: type,
+      typeLink: typeLink, // Preserve the link
       description: descriptionLines.join("\n").trim(),
       optional,
       nested,
@@ -571,7 +588,23 @@ function parseParameters(
     if (!line) return null;
     const trimmed = line.trim();
 
-    // Handle [`TypeName`](link) format first (backticks inside the link)
+    // Handle [`TypeName`](link)\<`T`\> format (with generics after the link)
+    const linkWithBackticksAndGenericsMatch = trimmed.match(/^\[`([^`]+)`\]\(([^)]+)\)(.*)$/);
+    if (linkWithBackticksAndGenericsMatch) {
+      const typeName = linkWithBackticksAndGenericsMatch[1];
+      const link = linkWithBackticksAndGenericsMatch[2];
+      const generics = linkWithBackticksAndGenericsMatch[3].trim();
+      
+      // If there are generics, append them to the type name (cleaning up markdown escapes)
+      const fullType = generics ? typeName + generics.replace(/\\/g, '') : typeName;
+      
+      return {
+        type: fullType,
+        link: link,
+      };
+    }
+
+    // Handle [`TypeName`](link) format (backticks inside the link, no generics)
     const linkWithBackticksMatch = trimmed.match(/^\[`([^`]+)`\]\(([^)]+)\)$/);
     if (linkWithBackticksMatch) {
       return {
@@ -826,16 +859,16 @@ function buildParamFieldsSection(
   for (const param of params) {
     const requiredAttr = param.optional ? "" : " required";
 
-    // Track non-primitive parameter types for suppression
-
-    fieldsOutput += `<ParamField body="${param.name}" type="${param.type}"${requiredAttr}>\n`;
+    // Clean up the type string by removing markdown backticks
+    let typeAttr = param.type.replace(/`/g, '');
+    fieldsOutput += `<ParamField body="${param.name}" type="${typeAttr}"${requiredAttr}>\n`;
 
     // Always show description in ParamField if it exists
     if (param.description) {
-      fieldsOutput += `\n${param.description}\n`;
+      fieldsOutput += `\n${param.description}`;
     }
 
-    fieldsOutput += "\n</ParamField>\n";
+    fieldsOutput += "\n\n</ParamField>\n";
 
     // If param has nested fields, wrap them in an Accordion
     if (param.nested.length > 0) {

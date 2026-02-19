@@ -44,6 +44,7 @@ export type {
   RealtimeEventType,
   RealtimeEvent,
   RealtimeCallback,
+  SortField,
 } from "./modules/entities.types.js";
 
 export type {

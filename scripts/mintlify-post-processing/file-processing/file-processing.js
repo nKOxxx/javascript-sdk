@@ -1221,6 +1221,79 @@ function applyNonExposedTypeLinkRemoval(dir, exposedTypeNames) {
 }
 
 /**
+ * Add clickable links for types in ParamFields that reference types on the same page
+ */
+function addTypeLinksToParamFields(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      addTypeLinksToParamFields(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      let content = fs.readFileSync(entryPath, "utf-8");
+      let modified = false;
+
+      // Integrate clickable link into the description for SortField type
+      // Pattern: <ParamField ... type="SortField<T>">\n\nSort parameter, ...
+      // Replace with: <ParamField ... type="SortField<T>">\n\nA [`SortField<T>`](#sortfield) specifying sort order, ...
+      const paramFieldPattern = /(<ParamField [^>]*type=")(SortField<([^>]*)>)("[^>]*>\n\n)Sort parameter,/g;
+      
+      content = content.replace(paramFieldPattern, (match, prefix, fullType, generic, suffix) => {
+        modified = true;
+        return `${prefix}${fullType}${suffix}A [\`${fullType}\`](#sortfield) specifying sort order,`;
+      });
+
+      if (modified) {
+        fs.writeFileSync(entryPath, content, "utf-8");
+        console.log(`Added type links to ParamFields: ${path.relative(DOCS_DIR, entryPath)}`);
+      }
+    }
+  }
+}
+
+/**
+ * Clean up SortField type signature to be more readable
+ */
+function cleanupSortFieldSignature(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      cleanupSortFieldSignature(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      let content = fs.readFileSync(entryPath, "utf-8");
+      let modified = false;
+
+      // Replace the complex SortField signature with a cleaner version
+      // Match: > **SortField**\<`T`\> = ... & ... | `` `+${(...) & (...)}` `` | `` `-${(...) & (...)}` ``
+      // Replace with: > **SortField**\<`T`\> = `string` | `` `+${string}` `` | `` `-${string}` ``
+      const sortFieldSignaturePattern = /> \*\*SortField\*\*\\<`T`\\> = \.\.\. & \.\.\. \| `` `\+\$\{\(\.\.\.\) & \(\.\.\.\)\}` `` \| `` `-\$\{\(\.\.\.\) & \(\.\.\.\)\}` ``/;
+      
+      if (sortFieldSignaturePattern.test(content)) {
+        content = content.replace(
+          sortFieldSignaturePattern,
+          "> **SortField**\\<`T`\\> = `keyof T` | `` `+${keyof T}` `` | `` `-${keyof T}` ``"
+        );
+        modified = true;
+      }
+
+      if (modified) {
+        fs.writeFileSync(entryPath, content, "utf-8");
+        console.log(`Cleaned SortField signature: ${path.relative(DOCS_DIR, entryPath)}`);
+      }
+    }
+  }
+}
+
+/**
  * Main function
  */
 /**
@@ -1287,6 +1360,12 @@ function main() {
   // Append configured articles
   const appendedArticles = loadAppendedArticlesConfig();
   applyAppendedArticles(appendedArticles);
+
+  // Add clickable links for types in ParamFields
+  addTypeLinksToParamFields(DOCS_DIR);
+
+  // Clean up SortField signature specifically (before general signature cleanup)
+  cleanupSortFieldSignature(DOCS_DIR);
 
   // Clean up signatures: fix truncated generics, simplify keyof constraints, break long lines
   applySignatureCleanup(DOCS_DIR);

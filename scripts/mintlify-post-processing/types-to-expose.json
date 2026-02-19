@@ -19,5 +19,6 @@
   "ImportResult",
   "IntegrationsModule",
   "CoreIntegrations",
+  "SortField",
   "SsoModule"
 ]
