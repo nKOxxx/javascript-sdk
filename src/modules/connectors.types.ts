@@ -34,6 +34,8 @@ export interface ConnectorAccessTokenResponse {
  * the API calls you make. This is useful when you need custom API interactions that aren't
  * covered by Base44's pre-built integrations.
  *
+ * ## Authentication Modes
+ *
  * This module is only available to use with a client in service role authentication mode, which means it can only be used in backend environments.
  *
  * ## Dynamic Types

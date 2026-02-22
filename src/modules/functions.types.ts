@@ -22,6 +22,8 @@ export type FunctionName = keyof FunctionNameRegistry extends never
  *
  * This module allows you to invoke the custom backend functions defined in the app.
  *
+ * ## Authentication Modes
+ *
  * This module is available to use with a client in all authentication modes:
  *
  * - **Anonymous or User authentication** (`base44.functions`): Functions are invoked with the current user's permissions. Anonymous users invoke functions without authentication, while authenticated users invoke functions with their authentication context.

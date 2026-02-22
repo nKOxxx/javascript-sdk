@@ -1031,9 +1031,20 @@ function demoteNonCallableHeadings(content) {
     if (inFence) {
       continue;
     }
+    // Demote ### headings that don't have parentheses (not methods) to ####
     if (line.startsWith("### ")) {
       const headingText = line.slice(4).trim();
       if (!headingText.includes("(")) {
+        lines[i] = `#### ${headingText}`;
+        modified = true;
+      }
+    }
+    // Demote ## Example/Examples headings for type definitions to ####
+    // These appear after type definitions (EntityRecord, SortField, etc.)
+    // and should not show in TOC
+    if (line.startsWith("## Example")) {
+      const headingText = line.slice(3).trim();
+      if (headingText === "Example" || headingText === "Examples") {
         lines[i] = `#### ${headingText}`;
         modified = true;
       }
@@ -1149,6 +1160,539 @@ function applyTypeDeclarationLinking(dir) {
         fs.writeFileSync(entryPath, updated, "utf-8");
         console.log(
           `Linked type declarations: ${path.relative(DOCS_DIR, entryPath)}`
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Group intro sections (like "Built-in User Entity", "Generated Types") under an "Overview" heading
+ * The Overview heading goes at the top of the page content, and intro paragraph becomes part of Overview
+ */
+function groupIntroSections(content) {
+  const lines = content.split("\n");
+  let modified = false;
+  
+  // Find where to insert "## Overview" - after the frontmatter and initial separator
+  // Look for the line after the closing --- of frontmatter
+  let insertIndex = -1;
+  let inFrontmatter = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (line === "---") {
+      if (!inFrontmatter) {
+        inFrontmatter = true;
+      } else {
+        // Found closing ---, next content line is where we insert
+        // Skip any *** separators or blank lines
+        for (let j = i + 1; j < lines.length; j++) {
+          if (lines[j].trim() !== "" && lines[j].trim() !== "***") {
+            insertIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
+  
+  if (insertIndex === -1) {
+    return { content, modified: false };
+  }
+  
+  // Find the first main section heading (Methods, EntityHandler, Properties, etc.)
+  // These mark the end of intro/overview sections
+  const mainSectionNames = ["Methods", "EntityHandler", "Properties", "Type Definitions"];
+  let mainSectionIndex = -1;
+  
+  for (let i = insertIndex; i < lines.length; i++) {
+    const line = lines[i].trim();
+    for (const sectionName of mainSectionNames) {
+      if (line === `## ${sectionName}`) {
+        mainSectionIndex = i;
+        break;
+      }
+    }
+    if (mainSectionIndex !== -1) break;
+  }
+  
+  if (mainSectionIndex === -1) {
+    // No main section found, nothing to group
+    return { content, modified: false };
+  }
+  
+  // Find all ## headings between insert point and main section (these are intro sections)
+  const introHeadingIndices = [];
+  for (let i = insertIndex; i < mainSectionIndex; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith("## ") && !line.startsWith("### ")) {
+      introHeadingIndices.push(i);
+    }
+  }
+  
+  // Insert "## Overview" at the beginning of content
+  lines.splice(insertIndex, 0, "## Overview", "");
+  modified = true;
+  
+  // Demote all intro headings from ## to ### (adjust indices after insertion)
+  for (let i = 0; i < introHeadingIndices.length; i++) {
+    const adjustedIndex = introHeadingIndices[i] + 2; // +2 because we inserted 2 lines
+    const line = lines[adjustedIndex];
+    if (line.startsWith("## ")) {
+      lines[adjustedIndex] = "###" + line.slice(2);
+    }
+  }
+  
+  return { content: lines.join("\n"), modified };
+}
+
+/**
+ * Apply intro section grouping to module files
+ */
+function applyIntroSectionGrouping(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      applyIntroSectionGrouping(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      const content = fs.readFileSync(entryPath, "utf-8");
+      const { content: updated, modified } = groupIntroSections(content);
+      if (modified) {
+        fs.writeFileSync(entryPath, updated, "utf-8");
+        console.log(
+          `Grouped intro sections: ${path.relative(DOCS_DIR, entryPath)}`
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Group type definition sections under a parent heading
+ * For entities: EntityRecord, EntityTypeRegistry, SortField
+ * For functions: FunctionName, FunctionNameRegistry
+ * For agents: AgentName, AgentNameRegistry
+ */
+function groupTypeDefinitions(content) {
+  let modified = false;
+  
+  // Define type definition patterns for different modules
+  const typeGroups = [
+    // Entities module
+    {
+      types: ["EntityRecord", "EntityTypeRegistry", "SortField"],
+      indicator: "EntityRecord"
+    },
+    // Functions module
+    {
+      types: ["FunctionName", "FunctionNameRegistry"],
+      indicator: "FunctionName"
+    },
+    // Agents module
+    {
+      types: ["AgentName", "AgentNameRegistry"],
+      indicator: "AgentName"
+    }
+  ];
+  
+  // Find which type group exists in this file
+  let matchedGroup = null;
+  for (const group of typeGroups) {
+    if (content.includes(`## ${group.indicator}`)) {
+      matchedGroup = group;
+      break;
+    }
+  }
+  
+  if (!matchedGroup) {
+    return { content, modified: false };
+  }
+  
+  // Find the position of the first type definition section
+  const firstTypeIndex = content.indexOf(`## ${matchedGroup.indicator}`);
+  if (firstTypeIndex === -1) {
+    return { content, modified: false };
+  }
+  
+  // Insert "## Type Definitions" heading before the first type
+  const beforeTypeDefinitions = content.slice(0, firstTypeIndex);
+  const typeDefinitionsSection = content.slice(firstTypeIndex);
+  
+  // Demote all types in this group from ## to ###
+  let demotedSection = typeDefinitionsSection;
+  for (const typeName of matchedGroup.types) {
+    const regex = new RegExp(`^## ${typeName}$`, "m");
+    demotedSection = demotedSection.replace(regex, `### ${typeName}`);
+  }
+  
+  const updatedContent = 
+    beforeTypeDefinitions +
+    "## Type Definitions\n\n" +
+    demotedSection;
+  
+  return { content: updatedContent, modified: true };
+}
+
+/**
+ * Rename and merge method sections for better TOC organization
+ * - EntityHandler → Entity Handler Methods
+ * - First ## Methods in integrations → Core Integrations Methods
+ * - custom-integrations → Custom Integrations Methods
+ * - Create Type Definitions section with Core, custom, and Indexable
+ */
+function mergeSectionWithMethods(content, filePath) {
+  const lines = content.split("\n");
+  let modified = false;
+  const isIntegrations = filePath && filePath.includes("integrations.mdx");
+  let firstMethodsFound = false;
+  
+  // Storage for extracted content
+  let coreDescription = null;
+  let customDescription = null;
+  let indexableContent = [];
+  let customIntegrationsModuleDescription = [];
+  
+  // First pass: extract type descriptions and remove sections in integrations
+  if (isIntegrations) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Rename ## Type Declaration to ## Type Definitions
+      if (line === "## Type Declaration") {
+        lines[i] = "## Type Definitions";
+        modified = true;
+      }
+      
+      // Remove ## Index Signature section (redundant with Indexable in Type Definitions)
+      if (line === "## Index Signature") {
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("##")) {
+            endIndex = j;
+            break;
+          }
+        }
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+      
+      // Remove ### Type Declarations and ### CoreIntegrations sections in Overview
+      if (line === "### Type Declarations" || line === "### CoreIntegrations") {
+        // Find the end of this section (next ## heading)
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("##")) {
+            endIndex = j;
+            break;
+          }
+        }
+        
+        // Extract coreDescription if this is CoreIntegrations
+        if (line === "### CoreIntegrations") {
+          for (let j = i + 1; j < endIndex && j < i + 10; j++) {
+            const descLine = lines[j].trim();
+            if (descLine && descLine !== "***" && !descLine.startsWith("#")) {
+              coreDescription = descLine;
+              break;
+            }
+          }
+        }
+        
+        // Remove lines from i to endIndex
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+      
+      // Extract and remove #### Core subsection (from old structure)
+      if (line === "#### Core") {
+        // Extract description
+        for (let j = i + 1; j < lines.length && j < i + 10; j++) {
+          const descLine = lines[j].trim();
+          if (descLine && descLine !== ">" && !descLine.startsWith(">") && !descLine.startsWith("#")) {
+            if (!coreDescription) coreDescription = descLine;
+            break;
+          }
+        }
+        
+        // Find end of subsection
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("####") || nextLine.startsWith("##")) {
+            endIndex = j;
+            break;
+          }
+        }
+        
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+      
+      // Extract and remove #### custom subsection
+      if (line === "#### custom") {
+        // Extract description
+        for (let j = i + 1; j < lines.length && j < i + 10; j++) {
+          const descLine = lines[j].trim();
+          if (descLine && descLine !== ">" && !descLine.startsWith(">") && !descLine.startsWith("#")) {
+            customDescription = descLine;
+            break;
+          }
+        }
+        
+        // Find end of subsection
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("####") || nextLine.startsWith("##")) {
+            endIndex = j;
+            break;
+          }
+        }
+        
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+      
+      // Extract and remove first ### Indexable (in Overview)
+      if (line === "### Indexable" && indexableContent.length === 0) {
+        // Extract the entire Indexable section
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("##")) {
+            endIndex = j;
+            break;
+          }
+        }
+        
+        // Save the content (excluding the heading)
+        indexableContent = lines.slice(i + 1, endIndex);
+        
+        // Remove this section
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+      
+      // Extract and remove second ## Indexable (before Custom Integrations Methods)
+      if (line === "## Indexable") {
+        // Extract the custom integrations module description that follows
+        let endIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine.startsWith("###") || nextLine.startsWith("## Methods")) {
+            endIndex = j;
+            break;
+          }
+        }
+        
+        // Extract description lines (skip the duplicate indexable definition)
+        let foundSeparator = false;
+        for (let j = i + 1; j < endIndex; j++) {
+          const descLine = lines[j].trim();
+          if (descLine === "***") {
+            foundSeparator = true;
+            continue;
+          }
+          if (foundSeparator && descLine && !descLine.startsWith(">") && !descLine.startsWith("[")) {
+            customIntegrationsModuleDescription.push(lines[j]);
+          }
+        }
+        
+        // Remove this section
+        lines.splice(i, endIndex - i);
+        modified = true;
+        i--;
+        continue;
+      }
+    }
+  }
+  
+  // Second pass: handle method section renaming and add descriptions
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Handle EntityHandler + Methods → Entity Handler Methods
+    if (line === "## EntityHandler") {
+      // Look ahead to find the next ## Methods heading
+      let methodsIndex = -1;
+      for (let j = i + 1; j < lines.length; j++) {
+        const nextLine = lines[j].trim();
+        if (nextLine.startsWith("## ")) {
+          if (nextLine === "## Methods") {
+            methodsIndex = j;
+          }
+          break;
+        }
+      }
+      
+      if (methodsIndex !== -1) {
+        lines[i] = "## Entity Handler Methods";
+        lines.splice(methodsIndex, 1);
+        modified = true;
+      }
+    }
+    
+    // Handle integrations module
+    if (isIntegrations) {
+      // First ## Methods → Core Integrations Methods
+      if (line === "## Methods" && !firstMethodsFound) {
+        lines[i] = "## Core Integrations Methods";
+        firstMethodsFound = true;
+        modified = true;
+        
+        // Add Core description after the heading
+        if (coreDescription) {
+          lines.splice(i + 1, 0, "", coreDescription, "");
+        }
+      }
+      // Remove any remaining ## Methods (after Custom Integrations Methods)
+      else if (line === "## Methods" && firstMethodsFound) {
+        // This is a duplicate Methods heading, remove it
+        lines.splice(i, 1);
+        modified = true;
+        i--;
+        continue;
+      }
+      // custom-integrations section
+      else if (line === "## custom-integrations") {
+        // Replace with Custom Integrations Methods
+        lines[i] = "## Custom Integrations Methods";
+        modified = true;
+        
+        // Add custom integrations module description after the heading
+        if (customIntegrationsModuleDescription.length > 0) {
+          lines.splice(i + 1, 0, "", ...customIntegrationsModuleDescription, "");
+        }
+      }
+    }
+  }
+  
+  // Third pass: Add Type Definitions section at the end for integrations
+  if (isIntegrations && (coreDescription || customDescription)) {
+    lines.push("");
+    lines.push("## Type Definitions");
+    lines.push("");
+    
+    // Add Core
+    if (coreDescription) {
+      lines.push("### Core");
+      lines.push("");
+      lines.push("> **Core**: `CoreIntegrations`");
+      lines.push("");
+      lines.push(coreDescription);
+      lines.push("");
+      lines.push("#### Example");
+      lines.push("");
+      lines.push("<CodeGroup>");
+      lines.push("");
+      lines.push("```typescript Invoke an LLM");
+      lines.push("const response = await base44.integrations.Core.InvokeLLM({");
+      lines.push("  prompt: 'Explain quantum computing',");
+      lines.push("  model: 'gpt-4'");
+      lines.push("});");
+      lines.push("```");
+      lines.push("");
+      lines.push("</CodeGroup>");
+      lines.push("");
+    }
+    
+    // Add custom
+    if (customDescription) {
+      lines.push("### custom");
+      lines.push("");
+      lines.push("> **custom**: `CustomIntegrationsModule`");
+      lines.push("");
+      lines.push(customDescription);
+      lines.push("");
+      lines.push("#### Example");
+      lines.push("");
+      lines.push("<CodeGroup>");
+      lines.push("");
+      lines.push("```typescript Call a custom integration");
+      lines.push("const result = await base44.integrations.custom.call(");
+      lines.push("  'github',");
+      lines.push("  'get:/repos/{owner}/{repo}',");
+      lines.push("  { pathParams: { owner: 'myorg', repo: 'myrepo' } }");
+      lines.push(");");
+      lines.push("```");
+      lines.push("");
+      lines.push("</CodeGroup>");
+      lines.push("");
+    }
+    
+    modified = true;
+  }
+  
+  return { content: lines.join("\n"), modified };
+}
+
+/**
+ * Apply section + methods merging to relevant files
+ */
+function applySectionMethodsMerging(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      applySectionMethodsMerging(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      const content = fs.readFileSync(entryPath, "utf-8");
+      const { content: updated, modified } = mergeSectionWithMethods(content, entryPath);
+      if (modified) {
+        fs.writeFileSync(entryPath, updated, "utf-8");
+        console.log(
+          `Merged section with methods: ${path.relative(DOCS_DIR, entryPath)}`
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Apply type definition grouping to relevant files
+ */
+function applyTypeDefinitionGrouping(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      applyTypeDefinitionGrouping(entryPath);
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"))
+    ) {
+      // Apply to all files - the function checks internally if it has type definitions
+      const content = fs.readFileSync(entryPath, "utf-8");
+      const { content: updated, modified } = groupTypeDefinitions(content);
+      if (modified) {
+        fs.writeFileSync(entryPath, updated, "utf-8");
+        console.log(
+          `Grouped type definitions: ${path.relative(DOCS_DIR, entryPath)}`
         );
       }
     }
@@ -1371,6 +1915,15 @@ function main() {
   applySignatureCleanup(DOCS_DIR);
 
   applyHeadingDemotion(DOCS_DIR);
+
+  // Group intro sections (Built-in User Entity, Generated Types, etc.) under Overview
+  applyIntroSectionGrouping(DOCS_DIR);
+
+  // Merge section headings with immediately following ## Methods
+  applySectionMethodsMerging(DOCS_DIR);
+
+  // Group type definitions under a parent heading
+  applyTypeDefinitionGrouping(DOCS_DIR);
 
   // Link type names in Type Declarations sections to their corresponding headings
   applyTypeDeclarationLinking(DOCS_DIR);

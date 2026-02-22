@@ -460,6 +460,14 @@ type DynamicEntitiesModule = {
  * - **Anonymous or User authentication** (`base44.entities`): Access is scoped to the current user's permissions. Anonymous users can only access public entities, while authenticated users can access entities they have permission to view or modify.
  * - **Service role authentication** (`base44.asServiceRole.entities`): Operations have elevated admin-level permissions. Can access all entities that the app's admin role has access to.
  *
+ * ## Entity Handlers
+ *
+ * An entity handler is the object you get when you access an entity through `base44.entities.EntityName`. Every entity in your app automatically gets a handler with CRUD methods for managing records.
+ *
+ * For example, `base44.entities.Task` is an entity handler for Task records, and `base44.entities.User` is an entity handler for User records. Each handler provides methods like `list()`, `create()`, `update()`, and `delete()`.
+ *
+ * You don't need to instantiate or import entity handlers. They're automatically available for every entity you create in your app.
+ *
  * ## Built-in User Entity
  *
  * Every app includes a built-in `User` entity that stores user account information. This entity has special security rules that can't be changed.

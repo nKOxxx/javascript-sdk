@@ -3,6 +3,8 @@
  *
  * This module provides a method to log user activity. The logs are reflected in the Analytics page in the app dashboard.
  *
+ * ## Authentication Modes
+ *
  * This module is available to use with a client in all authentication modes.
  */
 export interface AppLogsModule {

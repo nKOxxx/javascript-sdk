@@ -83,10 +83,14 @@ export type AnalyticsModuleOptions = {
  *
  * <Note> Analytics events tracked with this module appear as custom event cards in the [Analytics dashboard](/documentation/performance-and-seo/app-analytics).</Note>
  *
+ * ## Best Practices
+ *
  * When tracking events:
  *
  * - Choose clear, descriptive event names in snake_case like `signup_button_click` or `purchase_completed` rather than generic names like `click`.
  * - Include relevant context in your properties such as identifiers like `product_id`, measurements like `price`, and flags like `is_first_purchase`.
+ *
+ * ## Authentication Modes
  *
  * This module is only available in user authentication mode (`base44.analytics`).
  */

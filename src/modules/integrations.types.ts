@@ -10,23 +10,30 @@ import { CustomIntegrationsModule } from "./custom-integrations.types.js";
  * @returns Promise resolving to the integration endpoint's response.
  */
 export type IntegrationEndpointFunction = (
-  data: Record<string, any>
+  data: Record<string, any>,
 ) => Promise<any>;
 
 /**
  * A package containing integration endpoints.
  *
- * Provides dynamic access to integration endpoints within a package.
- * Each endpoint is accessed as a property that returns a function to invoke it.
+ * An integration package is a collection of endpoint functions indexed by endpoint name.
+ * Both `Core` and `custom` are integration packages that implement this structure.
  *
- * @example
+ * @example **Core package**
  * ```typescript
- * // Access endpoints dynamically
- * const result = await integrations.Core.SendEmail({
- *   to: 'user@example.com',
- *   subject: 'Hello',
- *   body: 'Message'
+ * await base44.integrations.Core.InvokeLLM({
+ *   prompt: 'Explain quantum computing',
+ *   model: 'gpt-4'
  * });
+ * ```
+ *
+ * @example **custom package**
+ * ```typescript
+ * await base44.integrations.custom.call(
+ *   'github',
+ *   'get:/repos/{owner}/{repo}',
+ *   { pathParams: { owner: 'myorg', repo: 'myrepo' } }
+ * );
  * ```
  */
 export type IntegrationPackage = {
@@ -285,7 +292,7 @@ export interface CoreIntegrations {
    * ```
    */
   ExtractDataFromUploadedFile(
-    params: ExtractDataFromUploadedFileParams
+    params: ExtractDataFromUploadedFileParams,
   ): Promise<ExtractDataFromUploadedFileResult>;
 
   /**
@@ -324,7 +331,7 @@ export interface CoreIntegrations {
    * ```
    */
   UploadPrivateFile(
-    params: UploadPrivateFileParams
+    params: UploadPrivateFileParams,
   ): Promise<UploadPrivateFileResult>;
 
   /**
@@ -346,7 +353,7 @@ export interface CoreIntegrations {
    * ```
    */
   CreateFileSignedUrl(
-    params: CreateFileSignedUrlParams
+    params: CreateFileSignedUrlParams,
   ): Promise<CreateFileSignedUrlResult>;
 }
 
@@ -355,6 +362,8 @@ export interface CoreIntegrations {
  *
  * This module provides access to integration methods for interacting with external services. Unlike the connectors module that gives you raw OAuth tokens, integrations provide pre-built functions that Base44 executes on your behalf.
  *
+ * ## Integration Types
+ *
  * There are two types of integrations:
  *
  * - **Built-in integrations** (`Core`): Pre-built functions provided by Base44 for common tasks such as AI-powered text generation, image creation, file uploads, and email. Access core integration methods using:
@@ -362,12 +371,14 @@ export interface CoreIntegrations {
  *   base44.integrations.Core.FunctionName(params)
  *   ```
  *
- * - **Custom integrations** (`custom`): Pre-configured external APIs. Custom integration calls are proxied through Base44's backend, so credentials are never exposed to the frontend. Access custom integration methods using:
+ * - **Custom workspace integrations** (`custom`): Pre-configured external APIs set up by workspace administrators. Workspace integration calls are proxied through Base44's backend, so credentials are never exposed to the frontend. Access custom workspace integration methods using:
  *   ```
  *   base44.integrations.custom.call(slug, operationId, params)
  *   ```
  *
- *   <Info>To call a custom integration, it must be pre-configured by a workspace administrator who imports an OpenAPI specification.</Info>
+ *   <Info>To call a custom workspace integration, it must be pre-configured by a workspace administrator who imports an OpenAPI specification. Learn more about [custom workspace integrations](/documentation/integrations/managing-workspace-integrations).</Info>
+ *
+ * ## Authentication Modes
  *
  * This module is available to use with a client in all authentication modes:
  *
@@ -377,19 +388,53 @@ export interface CoreIntegrations {
 export type IntegrationsModule = {
   /**
    * Core package containing built-in Base44 integration functions.
+   *
+   * @example
+   * ```typescript
+   * const response = await base44.integrations.Core.InvokeLLM({
+   *   prompt: 'Explain quantum computing',
+   *   model: 'gpt-4'
+   * });
+   * ```
    */
   Core: CoreIntegrations;
 
   /**
-   * Custom integrations module for calling pre-configured external APIs.
+   * Workspace integrations module for calling pre-configured external APIs.
+   *
+   * @example
+   * ```typescript
+   * const result = await base44.integrations.custom.call(
+   *   'github',
+   *   'get:/repos/{owner}/{repo}',
+   *   { pathParams: { owner: 'myorg', repo: 'myrepo' } }
+   * );
+   * ```
    */
   custom: CustomIntegrationsModule;
 } & {
   /**
    * Access to additional integration packages.
    *
-   * Additional integration packages may be added in the future and will be
-   * accessible using the same pattern as Core.
+   * Allows accessing integration packages as properties. This enables both `Core` and `custom` packages,
+   * as well as any future integration packages that may be added.
+   *
+   * @example **Use Core integrations**
+   * ```typescript
+   * const response = await base44.integrations.Core.InvokeLLM({
+   *   prompt: 'Explain quantum computing',
+   *   model: 'gpt-4'
+   * });
+   * ```
+   *
+   * @example **Use custom integrations**
+   * ```typescript
+   * const result = await base44.integrations.custom.call(
+   *   'github',
+   *   'get:/repos/{owner}/{repo}',
+   *   { pathParams: { owner: 'myorg', repo: 'myrepo' } }
+   * );
+   * ```
    */
   [packageName: string]: IntegrationPackage;
 };
