@@ -183,6 +183,8 @@ export interface AgentsModuleConfig {
  * send messages, and subscribe to realtime updates. Conversations can be used
  * for chat interfaces, support systems, or any interactive AI app.
  *
+ * ## Key Features
+ *
  * The agents module enables you to:
  *
  * - **Create conversations** with agents defined in the app.
@@ -192,11 +194,15 @@ export interface AgentsModuleConfig {
  * - **Attach metadata** to conversations for tracking context, categories, priorities, or linking to external systems.
  * - **Generate WhatsApp connection URLs** for users to interact with agents through WhatsApp.
  *
+ * ## Conversation Structure
+ *
  * The agents module operates with a two-level hierarchy:
  *
  * 1. **Conversations**: Top-level containers that represent a dialogue with a specific agent. Each conversation has a unique ID, is associated with an agent by name, and belongs to the user who created it. Conversations can include optional metadata for tracking app-specific context like ticket IDs, categories, or custom fields.
  *
  * 2. **Messages**: Individual exchanges within a conversation. Each message has a role, content, and optional metadata like token usage, tool calls, file attachments, and reasoning information. Messages are stored as an array within their parent conversation.
+ *
+ * ## Authentication Modes
  *
  * This module is available to use with a client in all authentication modes:
  *

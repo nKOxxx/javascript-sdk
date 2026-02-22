@@ -59,7 +59,6 @@ export type {
 
 export type {
   IntegrationsModule,
-  IntegrationPackage,
   IntegrationEndpointFunction,
   CoreIntegrations,
   InvokeLLMParams,

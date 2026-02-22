@@ -117,12 +117,10 @@ a:has(code) {
   color: #ff8844 !important; /* light orange */
 }
 
-/* Hide nested TOC items on interface and type-alias pages */
-body:has([data-page-href*="/content/interfaces/"])
-  .toc
-  li[data-depth]:not([data-depth="1"]),
-body:has([data-page-href*="/content/type-aliases/"])
-  .toc
-  li[data-depth]:not([data-depth="1"]) {
+/* Show section headings (depth 0) and methods (depth 1), but hide method details (depth 2+) */
+/* This applies to SDK interface and type-alias pages */
+
+/* Hide Parameters, Returns, Examples (depth 2) on SDK docs pages */
+.toc li.toc-item[data-depth="2"] {
   display: none !important;
 }

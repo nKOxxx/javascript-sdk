@@ -105,6 +105,8 @@ export interface AuthModuleOptions {
 /**
  * Authentication module for managing user authentication and authorization. The module automatically stores tokens in local storage when available and manages authorization headers for API requests.
  *
+ * ## Features
+ *
  * This module provides comprehensive authentication functionality including:
  * - Email/password login and registration
  * - Token management
@@ -112,6 +114,8 @@ export interface AuthModuleOptions {
  * - Password reset flows
  * - OTP verification
  * - User invitations
+ *
+ * ## Authentication Modes
  *
  * The auth module is only available in user authentication mode (`base44.auth`).
  */
