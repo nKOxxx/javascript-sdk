@@ -151,6 +151,7 @@ export function createClient(config: CreateClientConfig): Base44Client {
       getSocket,
     }),
     integrations: createIntegrationsModule(axiosClient, appId),
+    connectors: createConnectorsModule(axiosClient, appId),
     auth: userAuthModule,
     functions: createFunctionsModule(functionsAxiosClient, appId),
     agents: createAgentsModule({
