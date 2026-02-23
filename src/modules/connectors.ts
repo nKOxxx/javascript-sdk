@@ -2,6 +2,7 @@ import { AxiosInstance } from "axios";
 import {
   ConnectorIntegrationType,
   ConnectorAccessTokenResponse,
+  ConnectorInitiateResponse,
   ConnectorsModule,
 } from "./connectors.types.js";
 
@@ -33,6 +34,22 @@ export function createConnectorsModule(
 
       // @ts-expect-error
       return response.access_token;
+    },
+
+    async initiate(
+      integrationType: ConnectorIntegrationType
+    ): Promise<string> {
+      if (!integrationType || typeof integrationType !== "string") {
+        throw new Error("Integration type is required and must be a string");
+      }
+
+      const response = await axios.post<ConnectorInitiateResponse>(
+        `/apps/${appId}/end-user-auth/initiate`,
+        { integration_type: integrationType }
+      );
+
+      // @ts-expect-error
+      return response.redirect_url;
     },
   };
 }

@@ -25,6 +25,13 @@ export interface ConnectorAccessTokenResponse {
 }
 
 /**
+ * Response from the connectors initiate endpoint.
+ */
+export interface ConnectorInitiateResponse {
+  redirect_url: string;
+}
+
+/**
  * Connectors module for managing OAuth tokens for external services.
  *
  * This module allows you to retrieve OAuth access tokens for external services that the app has connected to. Connectors are app-scoped. When an app builder connects an integration like Google Calendar or Slack, all users of the app share that same connection.
@@ -87,4 +94,24 @@ export interface ConnectorsModule {
    * ```
    */
   getAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;
+
+  /**
+   * Initiates the end-user OAuth flow for a specific external integration type.
+   *
+   * Returns a redirect URL that the end user should be redirected to in order to
+   * authenticate with the external service.
+   *
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @returns Promise resolving to the redirect URL string.
+   *
+   * @example
+   * ```typescript
+   * // Initiate Google Calendar OAuth for the end user
+   * const redirectUrl = await base44.asServiceRole.connectors.initiate('googlecalendar');
+   *
+   * // Redirect the user to the OAuth provider
+   * res.redirect(redirectUrl);
+   * ```
+   */
+  initiate(integrationType: ConnectorIntegrationType): Promise<string>;
 }
