@@ -117,13 +117,19 @@ export function createAuthModule(
       // Build the full redirect URL
       const redirectUrl = new URL(fromUrl, window.location.origin).toString();
 
-      // Build the provider login URL (google is the default, so no provider path needed)
-      const providerPath = provider === "google" ? "" : `/${provider}`;
-      const loginUrl = `${
-        options.appBaseUrl
-      }/api/apps/auth${providerPath}/login?app_id=${appId}&from_url=${encodeURIComponent(
-        redirectUrl
-      )}`;
+      const queryParams = `app_id=${appId}&from_url=${encodeURIComponent(redirectUrl)}`;
+
+      // SSO uses a different URL structure with appId in the path
+      let authPath: string;
+      if (provider === "sso") {
+        authPath = `/apps/${appId}/auth/sso/login`;
+      } else {
+        // Google is the default provider, so no provider path segment needed
+        const providerPath = provider === "google" ? "" : `/${provider}`;
+        authPath = `/apps/auth${providerPath}/login`;
+      }
+
+      const loginUrl = `${options.appBaseUrl}/api${authPath}?${queryParams}`;
 
       // On preview/sandbox/checkpoint domains the app runs inside an iframe —
       // use a popup to avoid OAuth providers blocking iframe navigation.
