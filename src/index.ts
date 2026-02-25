@@ -23,6 +23,8 @@ export {
   getLoginUrl,
 };
 
+export default createClient;
+
 export type {
   Base44Client,
   CreateClientConfig,
