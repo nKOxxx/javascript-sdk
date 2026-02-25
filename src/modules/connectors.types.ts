@@ -22,6 +22,18 @@ export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry ex
  */
 export interface ConnectorAccessTokenResponse {
   access_token: string;
+  integration_type: string;
+  connection_config: Record<string, string> | null;
+}
+
+/**
+ * Camel-cased connection details returned by {@linkcode ConnectorsModule.getConnection | getConnection()}.
+ */
+export interface ConnectorConnectionResponse {
+  /** The OAuth access token for the external service. */
+  accessToken: string;
+  /** Key-value configuration for the connection, or `null` if the connector does not provide one. */
+  connectionConfig: Record<string, string> | null;
 }
 
 /**
@@ -87,4 +99,36 @@ export interface ConnectorsModule {
    * ```
    */
   getAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;
+
+  /**
+   * Retrieves the OAuth access token and connection configuration for a specific external integration type.
+   *
+   * Returns both the OAuth token and any additional connection configuration
+   * that the connector provides. This is useful when the external service requires
+   * extra parameters beyond the access token (e.g., a shop domain, account ID, or API base URL).
+   *
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @returns Promise resolving to a {@link ConnectorConnectionResponse} with `accessToken` and `connectionConfig`.
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
+   * console.log(connection.accessToken);
+   * console.log(connection.connectionConfig);
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Using connection config for a service that requires extra parameters
+   * const connection = await base44.asServiceRole.connectors.getConnection('shopify');
+   * const { accessToken, connectionConfig } = connection;
+   *
+   * const response = await fetch(
+   *   `https://${connectionConfig?.shop}/admin/api/2024-01/products.json`,
+   *   { headers: { 'X-Shopify-Access-Token': accessToken } }
+   * );
+   * ```
+   */
+  getConnection(integrationType: ConnectorIntegrationType): Promise<ConnectorConnectionResponse>;
 }
