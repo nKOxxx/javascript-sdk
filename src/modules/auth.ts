@@ -16,14 +16,20 @@ function isPopupAuthDomain(): boolean {
 }
 
 /**
- * Opens a URL in a centered popup and, once the OAuth provider redirects
- * back to our origin, mirrors that callback URL in the current window so the
- * iframe processes the access_token query param exactly as a normal redirect
- * would.
+ * Opens a URL in a centered popup and waits for the backend to postMessage
+ * the auth result back. On success, redirects the current window to
+ * redirectUrl with the token params appended, preserving the same behaviour
+ * as a normal full-page redirect flow.
  *
- * @param url - The URL to open in the popup.
+ * @param url - The login URL to open in the popup (should include popup_origin).
+ * @param redirectUrl - Where to redirect after auth (the original fromUrl).
+ * @param expectedOrigin - The origin we expect the postMessage to come from.
  */
-function loginViaPopup(url: string): void {
+function loginViaPopup(
+  url: string,
+  redirectUrl: string,
+  expectedOrigin: string
+): void {
   const width = 500;
   const height = 600;
   const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
@@ -39,29 +45,39 @@ function loginViaPopup(url: string): void {
     return;
   }
 
-  const pollTimer = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(pollTimer);
-      return;
+  const cleanup = () => {
+    window.removeEventListener("message", onMessage);
+    clearInterval(pollTimer);
+    if (!popup.closed) popup.close();
+  };
+
+  const onMessage = (event: MessageEvent) => {
+    if (event.origin !== expectedOrigin) return;
+    if (event.source !== popup) return;
+    if (!event.data?.access_token) return;
+
+    cleanup();
+
+    // Append the token params to redirectUrl so the app processes them
+    // exactly as it would from a normal OAuth callback redirect.
+    const callbackUrl = new URL(redirectUrl);
+    const { access_token, is_new_user } = event.data;
+
+    callbackUrl.searchParams.set("access_token", access_token);
+
+    if (is_new_user != null) {
+      callbackUrl.searchParams.set("is_new_user", String(is_new_user));
     }
 
-    try {
-      // Accessing popup.location.href throws a cross-origin error while the
-      // OAuth provider's pages are open — that's expected and means the flow
-      // is still in progress.  Once it stops throwing, the popup has landed
-      // back on our origin with the callback URL (e.g. ?access_token=...).
-      const callbackUrl = popup.location.href;
-      if (new URL(callbackUrl).origin === window.location.origin) {
-        clearInterval(pollTimer);
-        popup.close();
-        // Redirect the iframe to the same URL the popup landed on so it
-        // processes the token from the query params as it normally would.
-        window.location.href = callbackUrl;
-      }
-    } catch {
-      // Still on the OAuth provider's domain — keep polling
-    }
-  }, 300);
+    window.location.href = callbackUrl.toString();
+  };
+
+  // Only used to detect the user closing the popup before auth completes
+  const pollTimer = setInterval(() => {
+    if (popup.closed) cleanup();
+  }, 500);
+
+  window.addEventListener("message", onMessage);
 }
 
 /**
@@ -134,7 +150,12 @@ export function createAuthModule(
       // On preview/sandbox/checkpoint domains the app runs inside an iframe —
       // use a popup to avoid OAuth providers blocking iframe navigation.
       if (isPopupAuthDomain()) {
-        return loginViaPopup(loginUrl);
+        const popupLoginUrl = `${loginUrl}&popup_origin=${encodeURIComponent(window.location.origin)}`;
+        return loginViaPopup(
+          popupLoginUrl,
+          redirectUrl,
+          new URL(options.appBaseUrl).origin
+        );
       }
 
       // Default: full-page redirect
