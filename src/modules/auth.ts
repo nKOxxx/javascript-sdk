@@ -8,7 +8,7 @@ import {
 } from "./auth.types";
 
 const POPUP_AUTH_DOMAIN_REGEX =
-  /^(preview-sandbox--|preview--|checkpoint--)[^.]+\.base44\.app$/;
+  /^(preview-sandbox--|preview--|checkpoint--)[^.]+\./;
 
 function isPopupAuthDomain(): boolean {
   if (typeof window === "undefined") return false;
