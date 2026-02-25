@@ -7,6 +7,63 @@ import {
   ResetPasswordParams,
 } from "./auth.types";
 
+const POPUP_AUTH_DOMAIN_REGEX =
+  /^(preview-sandbox--|preview--|checkpoint--)[^.]+\.base44\.app$/;
+
+function isPopupAuthDomain(): boolean {
+  if (typeof window === "undefined") return false;
+  return POPUP_AUTH_DOMAIN_REGEX.test(window.location.hostname);
+}
+
+/**
+ * Opens a URL in a centered popup and, once the OAuth provider redirects
+ * back to our origin, mirrors that callback URL in the current window so the
+ * iframe processes the access_token query param exactly as a normal redirect
+ * would.
+ *
+ * @param url - The URL to open in the popup.
+ */
+function loginViaPopup(url: string): void {
+  const width = 500;
+  const height = 600;
+  const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+  const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+
+  const popup = window.open(
+    url,
+    "base44_auth",
+    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+  );
+
+  if (!popup) {
+    return;
+  }
+
+  const pollTimer = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(pollTimer);
+      return;
+    }
+
+    try {
+      // Accessing popup.location.href throws a cross-origin error while the
+      // OAuth provider's pages are open — that's expected and means the flow
+      // is still in progress.  Once it stops throwing, the popup has landed
+      // back on our origin with the callback URL (e.g. ?access_token=...).
+      const callbackUrl = popup.location.href;
+      if (new URL(callbackUrl).origin === window.location.origin) {
+        clearInterval(pollTimer);
+        popup.close();
+        // Redirect the iframe to the same URL the popup landed on so it
+        // processes the token from the query params as it normally would.
+        window.location.href = callbackUrl;
+      }
+    } catch {
+      // Still on the OAuth provider's domain — keep polling
+    }
+  }, 300);
+}
+
 /**
  * Creates the auth module for the Base44 SDK.
  *
@@ -68,7 +125,13 @@ export function createAuthModule(
         redirectUrl
       )}`;
 
-      // Redirect to the provider login page
+      // On preview/sandbox/checkpoint domains the app runs inside an iframe —
+      // use a popup to avoid OAuth providers blocking iframe navigation.
+      if (isPopupAuthDomain()) {
+        return loginViaPopup(loginUrl);
+      }
+
+      // Default: full-page redirect
       window.location.href = loginUrl;
     },
 
