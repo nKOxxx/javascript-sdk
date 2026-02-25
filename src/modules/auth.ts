@@ -151,11 +151,7 @@ export function createAuthModule(
       // use a popup to avoid OAuth providers blocking iframe navigation.
       if (isPopupAuthDomain()) {
         const popupLoginUrl = `${loginUrl}&popup_origin=${encodeURIComponent(window.location.origin)}`;
-        return loginViaPopup(
-          popupLoginUrl,
-          redirectUrl,
-          new URL(options.appBaseUrl).origin
-        );
+        return loginViaPopup(popupLoginUrl, redirectUrl, window.location.origin);
       }
 
       // Default: full-page redirect
