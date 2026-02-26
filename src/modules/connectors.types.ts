@@ -32,7 +32,7 @@ export interface ConnectorInitiateResponse {
 }
 
 /**
- * Connectors module for managing OAuth tokens for external services.
+ * Connectors module for managing app-scoped OAuth tokens for external services.
  *
  * This module allows you to retrieve OAuth access tokens for external services that the app has connected to. Connectors are app-scoped. When an app builder connects an integration like Google Calendar or Slack, all users of the app share that same connection.
  *
@@ -41,9 +41,7 @@ export interface ConnectorInitiateResponse {
  * the API calls you make. This is useful when you need custom API interactions that aren't
  * covered by Base44's pre-built integrations.
  *
- * ## Authentication Modes
- *
- * This module is only available to use with a client in service role authentication mode, which means it can only be used in backend environments.
+ * This module is only available via `base44.asServiceRole.connectors`.
  *
  * ## Dynamic Types
  *
@@ -94,11 +92,49 @@ export interface ConnectorsModule {
    * ```
    */
   getAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;
+}
+
+/**
+ * User-scoped connectors module for managing end-user OAuth connections.
+ *
+ * This module provides methods for end-user OAuth flows: initiating an OAuth connection,
+ * retrieving the end user's access token, and disconnecting the end user's connection.
+ *
+ * Unlike {@link ConnectorsModule | ConnectorsModule} which manages app-scoped tokens,
+ * this module manages tokens scoped to individual end users.
+ *
+ * Available via `base44.connectors`.
+ *
+ * ## Dynamic Types
+ *
+ * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
+ */
+export interface UserConnectorsModule {
+  /**
+   * Retrieves an OAuth access token for an end user's connection to a specific external integration.
+   *
+   * Returns the OAuth token string that belongs to the currently authenticated end user
+   * for the specified external service.
+   *
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @returns Promise resolving to the access token string.
+   *
+   * @example
+   * ```typescript
+   * // Get the end user's Google Calendar token
+   * const token = await base44.connectors.getEndUserAccessToken('googlecalendar');
+   *
+   * const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+   *   headers: { 'Authorization': `Bearer ${token}` }
+   * });
+   * ```
+   */
+  getEndUserAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;
 
   /**
    * Initiates the end-user OAuth flow for a specific external integration type.
    *
-   * Returns a redirect URL that the end user should be redirected to in order to
+   * Returns a redirect URL that the end user should be navigated to in order to
    * authenticate with the external service.
    *
    * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
@@ -106,29 +142,29 @@ export interface ConnectorsModule {
    *
    * @example
    * ```typescript
-   * // Initiate Google Calendar OAuth for the end user
-   * const redirectUrl = await base44.asServiceRole.connectors.initiate('googlecalendar');
+   * // Start Google Calendar OAuth for the end user
+   * const redirectUrl = await base44.connectors.connectEndUser('googlecalendar');
    *
    * // Redirect the user to the OAuth provider
-   * res.redirect(redirectUrl);
+   * window.location.href = redirectUrl;
    * ```
    */
-  initiate(integrationType: ConnectorIntegrationType): Promise<string>;
+  connectEndUser(integrationType: ConnectorIntegrationType): Promise<string>;
 
   /**
-   * Disconnects an end-user's OAuth connection for a specific external integration type.
+   * Disconnects an end user's OAuth connection for a specific external integration type.
    *
-   * Removes the stored OAuth credentials for the end user's connection to the
-   * specified external service.
+   * Removes the stored OAuth credentials for the currently authenticated end user's
+   * connection to the specified external service.
    *
    * @param integrationType - The type of integration to disconnect, such as `'googlecalendar'`, `'slack'`, or `'github'`.
    * @returns Promise resolving when the connection has been removed.
    *
    * @example
    * ```typescript
-   * // Disconnect Google Calendar for the end user
-   * await base44.asServiceRole.connectors.disconnect('googlecalendar');
+   * // Disconnect the end user's Google Calendar connection
+   * await base44.connectors.disconnectEndUser('googlecalendar');
    * ```
    */
-  disconnect(integrationType: ConnectorIntegrationType): Promise<void>;
+  disconnectEndUser(integrationType: ConnectorIntegrationType): Promise<void>;
 }

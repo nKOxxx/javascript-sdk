@@ -3,7 +3,10 @@ import { createEntitiesModule } from "./modules/entities.js";
 import { createIntegrationsModule } from "./modules/integrations.js";
 import { createAuthModule } from "./modules/auth.js";
 import { createSsoModule } from "./modules/sso.js";
-import { createConnectorsModule } from "./modules/connectors.js";
+import {
+  createConnectorsModule,
+  createUserConnectorsModule,
+} from "./modules/connectors.js";
 import { getAccessToken } from "./utils/auth-utils.js";
 import { createFunctionsModule } from "./modules/functions.js";
 import { createAgentsModule } from "./modules/agents.js";
@@ -151,7 +154,7 @@ export function createClient(config: CreateClientConfig): Base44Client {
       getSocket,
     }),
     integrations: createIntegrationsModule(axiosClient, appId),
-    connectors: createConnectorsModule(axiosClient, appId),
+    connectors: createUserConnectorsModule(axiosClient, appId),
     auth: userAuthModule,
     functions: createFunctionsModule(functionsAxiosClient, appId),
     agents: createAgentsModule({

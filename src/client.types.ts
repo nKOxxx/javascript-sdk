@@ -3,7 +3,10 @@ import type { EntitiesModule } from "./modules/entities.types.js";
 import type { IntegrationsModule } from "./modules/integrations.types.js";
 import type { AuthModule } from "./modules/auth.types.js";
 import type { SsoModule } from "./modules/sso.types.js";
-import type { ConnectorsModule } from "./modules/connectors.types.js";
+import type {
+  ConnectorsModule,
+  UserConnectorsModule,
+} from "./modules/connectors.types.js";
 import type { FunctionsModule } from "./modules/functions.types.js";
 import type { AgentsModule } from "./modules/agents.types.js";
 import type { AppLogsModule } from "./modules/app-logs.types.js";
@@ -88,8 +91,8 @@ export interface Base44Client {
   auth: AuthModule;
   /** The underlying Axios instance used for API requests. Useful for making custom API calls with the same authentication and configuration as the SDK. */
   axiosClient: AxiosInstance;
-  /** {@link ConnectorsModule | Connectors module} for OAuth token retrieval. */
-  connectors: ConnectorsModule;
+  /** {@link UserConnectorsModule | Connectors module} for end-user OAuth flows. */
+  connectors: UserConnectorsModule;
   /** {@link EntitiesModule | Entities module} for CRUD operations on your data models. */
   entities: EntitiesModule;
   /** {@link FunctionsModule | Functions module} for invoking custom backend functions. */

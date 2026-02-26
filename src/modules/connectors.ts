@@ -4,6 +4,7 @@ import {
   ConnectorAccessTokenResponse,
   ConnectorInitiateResponse,
   ConnectorsModule,
+  UserConnectorsModule,
 } from "./connectors.types.js";
 
 /**
@@ -35,8 +36,39 @@ export function createConnectorsModule(
       // @ts-expect-error
       return response.access_token;
     },
+  };
+}
 
-    async initiate(
+/**
+ * Creates the user-scoped Connectors module (end-user OAuth flows).
+ *
+ * @param axios - Axios instance (user-scoped client)
+ * @param appId - Application ID
+ * @returns User connectors module with end-user OAuth methods
+ * @internal
+ */
+export function createUserConnectorsModule(
+  axios: AxiosInstance,
+  appId: string
+): UserConnectorsModule {
+  return {
+    // @ts-expect-error Return type mismatch - implementation returns object, interface expects string
+    async getEndUserAccessToken(
+      integrationType: ConnectorIntegrationType
+    ): Promise<ConnectorAccessTokenResponse> {
+      if (!integrationType || typeof integrationType !== "string") {
+        throw new Error("Integration type is required and must be a string");
+      }
+
+      const response = await axios.get<ConnectorAccessTokenResponse>(
+        `/apps/${appId}/end-user-auth/tokens/${integrationType}`
+      );
+
+      // @ts-expect-error
+      return response.access_token;
+    },
+
+    async connectEndUser(
       integrationType: ConnectorIntegrationType
     ): Promise<string> {
       if (!integrationType || typeof integrationType !== "string") {
@@ -52,7 +84,7 @@ export function createConnectorsModule(
       return response.redirect_url;
     },
 
-    async disconnect(
+    async disconnectEndUser(
       integrationType: ConnectorIntegrationType
     ): Promise<void> {
       if (!integrationType || typeof integrationType !== "string") {
