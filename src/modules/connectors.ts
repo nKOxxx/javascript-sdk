@@ -51,5 +51,17 @@ export function createConnectorsModule(
       // @ts-expect-error
       return response.redirect_url;
     },
+
+    async disconnect(
+      integrationType: ConnectorIntegrationType
+    ): Promise<void> {
+      if (!integrationType || typeof integrationType !== "string") {
+        throw new Error("Integration type is required and must be a string");
+      }
+
+      await axios.delete(
+        `/apps/${appId}/end-user-auth/${integrationType}`
+      );
+    },
   };
 }

@@ -114,4 +114,21 @@ export interface ConnectorsModule {
    * ```
    */
   initiate(integrationType: ConnectorIntegrationType): Promise<string>;
+
+  /**
+   * Disconnects an end-user's OAuth connection for a specific external integration type.
+   *
+   * Removes the stored OAuth credentials for the end user's connection to the
+   * specified external service.
+   *
+   * @param integrationType - The type of integration to disconnect, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @returns Promise resolving when the connection has been removed.
+   *
+   * @example
+   * ```typescript
+   * // Disconnect Google Calendar for the end user
+   * await base44.asServiceRole.connectors.disconnect('googlecalendar');
+   * ```
+   */
+  disconnect(integrationType: ConnectorIntegrationType): Promise<void>;
 }
