@@ -27,9 +27,6 @@ export function createConnectorsModule(
     async getAccessToken(
       integrationType: ConnectorIntegrationType
     ): Promise<ConnectorAccessTokenResponse> {
-      console.warn(
-        "[Base44 SDK] connectors.getAccessToken() is deprecated. Use getConnection(integrationType) and use the returned accessToken instead."
-      );
       if (!integrationType || typeof integrationType !== "string") {
         throw new Error("Integration type is required and must be a string");
       }
