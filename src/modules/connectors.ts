@@ -19,11 +19,17 @@ export function createConnectorsModule(
   appId: string
 ): ConnectorsModule {
   return {
-    // Retrieve an OAuth access token for a specific external integration type
-    // @ts-expect-error Return type mismatch with interface - implementation returns object, interface expects string
+    /**
+     * Retrieve an OAuth access token for a specific external integration type.
+     * @deprecated Use getConnection(integrationType) and use the returned accessToken (and connectionConfig when needed) instead.
+     */
+    // @ts-expect-error Return type mismatch with interface - implementation returns string, interface expects string but implementation is typed as ConnectorAccessTokenResponse
     async getAccessToken(
       integrationType: ConnectorIntegrationType
     ): Promise<ConnectorAccessTokenResponse> {
+      console.warn(
+        "[Base44 SDK] connectors.getAccessToken() is deprecated. Use getConnection(integrationType) and use the returned accessToken instead."
+      );
       if (!integrationType || typeof integrationType !== "string") {
         throw new Error("Integration type is required and must be a string");
       }

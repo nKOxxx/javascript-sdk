@@ -10,7 +10,8 @@ export interface ConnectorIntegrationTypeRegistry {}
  * ```typescript
  * // Using generated connector type names
  * // With generated types, you get autocomplete on integration types
- * const token = await base44.asServiceRole.connectors.getAccessToken('googlecalendar');
+ * const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
+ * const token = connection.accessToken;
  * ```
  */
 export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry extends never
@@ -52,11 +53,13 @@ export interface ConnectorConnectionResponse {
  *
  * ## Dynamic Types
  *
- * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names when calling `getAccessToken()`. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
+ * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names when calling `getConnection()`. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  */
 export interface ConnectorsModule {
   /**
    * Retrieves an OAuth access token for a specific external integration type.
+   *
+   * @deprecated Use {@link getConnection} and use the returned `accessToken` (and `connectionConfig` when needed) instead.
    *
    * Returns the OAuth token string for an external service that an app builder
    * has connected to. This token represents the connected app builder's account
@@ -120,14 +123,20 @@ export interface ConnectorsModule {
    *
    * @example
    * ```typescript
-   * // Using connection config for a service that requires extra parameters
+   * // Shopify: connectionConfig has subdomain (e.g. "my-store" for my-store.myshopify.com)
    * const connection = await base44.asServiceRole.connectors.getConnection('shopify');
    * const { accessToken, connectionConfig } = connection;
+   * const shop = connectionConfig?.subdomain
+   *   ? `https://${connectionConfig.subdomain}.myshopify.com`
+   *   : null;
    *
-   * const response = await fetch(
-   *   `https://${connectionConfig?.shop}/admin/api/2024-01/products.json`,
-   *   { headers: { 'X-Shopify-Access-Token': accessToken } }
-   * );
+   * if (shop) {
+   *   const response = await fetch(
+   *     `${shop}/admin/api/2024-01/products.json?limit=10`,
+   *     { headers: { 'X-Shopify-Access-Token': accessToken } }
+   *   );
+   *   const { products } = await response.json();
+   * }
    * ```
    */
   getConnection(integrationType: ConnectorIntegrationType): Promise<ConnectorConnectionResponse>;
