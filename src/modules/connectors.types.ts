@@ -88,7 +88,7 @@ export interface ConnectorConnectionResponse {
  */
 export interface ConnectorsModule {
   /**
-   * Retrieves an OAuth access token for a specific external integration type.
+   * Retrieves an OAuth access token for a specific [external integration type](#available-connectors).
    *
    * @deprecated Use {@link getConnection} and use the returned `accessToken` (and `connectionConfig` when needed) instead.
    *
@@ -96,7 +96,7 @@ export interface ConnectorsModule {
    * has connected to. This token represents the connected app builder's account
    * and can be used to make authenticated API calls to that external service on behalf of the app.
    *
-   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, `'slackbot'`, `'github'`, or `'discord'`.
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, `'slackbot'`, `'github'`, or `'discord'`. See [Available connectors](#available-connectors) for the full list.
    * @returns Promise resolving to the access token string.
    *
    * @example
