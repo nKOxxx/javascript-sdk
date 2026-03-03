@@ -10,7 +10,8 @@ export interface ConnectorIntegrationTypeRegistry {}
  * ```typescript
  * // Using generated connector type names
  * // With generated types, you get autocomplete on integration types
- * const token = await base44.asServiceRole.connectors.getAccessToken('googlecalendar');
+ * const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
+ * const token = connection.accessToken;
  * ```
  */
 export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry extends never
@@ -22,6 +23,18 @@ export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry ex
  */
 export interface ConnectorAccessTokenResponse {
   access_token: string;
+  integration_type: string;
+  connection_config: Record<string, string> | null;
+}
+
+/**
+ * Camel-cased connection details returned by {@linkcode ConnectorsModule.getConnection | getConnection()}.
+ */
+export interface ConnectorConnectionResponse {
+  /** The OAuth access token for the external service. */
+  accessToken: string;
+  /** Key-value configuration for the connection, or `null` if the connector does not provide one. */
+  connectionConfig: Record<string, string> | null;
 }
 
 /**
@@ -40,11 +53,13 @@ export interface ConnectorAccessTokenResponse {
  *
  * ## Dynamic Types
  *
- * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names when calling `getAccessToken()`. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
+ * If you're working in a TypeScript project, you can generate types from your app's connector configurations to get autocomplete on integration type names when calling `getConnection()`. See the [Dynamic Types](/developers/references/sdk/getting-started/dynamic-types) guide to get started.
  */
 export interface ConnectorsModule {
   /**
    * Retrieves an OAuth access token for a specific external integration type.
+   *
+   * @deprecated Use {@link getConnection} and use the returned `accessToken` (and `connectionConfig` when needed) instead.
    *
    * Returns the OAuth token string for an external service that an app builder
    * has connected to. This token represents the connected app builder's account
@@ -87,4 +102,42 @@ export interface ConnectorsModule {
    * ```
    */
   getAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;
+
+  /**
+   * Retrieves the OAuth access token and connection configuration for a specific external integration type.
+   *
+   * Returns both the OAuth token and any additional connection configuration
+   * that the connector provides. This is useful when the external service requires
+   * extra parameters beyond the access token (e.g., a shop domain, account ID, or API base URL).
+   *
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @returns Promise resolving to a {@link ConnectorConnectionResponse} with `accessToken` and `connectionConfig`.
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
+   * console.log(connection.accessToken);
+   * console.log(connection.connectionConfig);
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Shopify: connectionConfig has subdomain (e.g. "my-store" for my-store.myshopify.com)
+   * const connection = await base44.asServiceRole.connectors.getConnection('shopify');
+   * const { accessToken, connectionConfig } = connection;
+   * const shop = connectionConfig?.subdomain
+   *   ? `https://${connectionConfig.subdomain}.myshopify.com`
+   *   : null;
+   *
+   * if (shop) {
+   *   const response = await fetch(
+   *     `${shop}/admin/api/2024-01/products.json?limit=10`,
+   *     { headers: { 'X-Shopify-Access-Token': accessToken } }
+   *   );
+   *   const { products } = await response.json();
+   * }
+   * ```
+   */
+  getConnection(integrationType: ConnectorIntegrationType): Promise<ConnectorConnectionResponse>;
 }
