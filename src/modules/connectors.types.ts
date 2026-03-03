@@ -71,11 +71,7 @@ export interface ConnectorConnectionResponse {
  * | Slack Bot | `slackbot` |
  * | TikTok | `tiktok` |
  *
- * Some connectors have dedicated setup guides: {@link https://docs.base44.com/Integrations/gmail-connector | Gmail}, {@link https://docs.base44.com/Integrations/linkedin-connector | LinkedIn}, and {@link https://docs.base44.com/Integrations/slack-connector | Slack} (covers both `slack` and `slackbot`).
- *
- * ### Slack User vs Slack Bot
- *
- * Base44 provides two Slack connectors: `slack` uses a user token and acts as the connected user, while `slackbot` uses a bot token with a customizable display name. Use `slack` when your app needs to read Slack data or act with a user's permissions. Use `slackbot` for sending automated messages as a branded bot. See the {@link https://docs.base44.com/Integrations/slack-connector | Slack connectors} guide for full details.
+ * For available scopes, see the permissions reference for each service: {@link https://docs.base44.com/Integrations/gmail-connector#gmail-scopes-and-permissions | Gmail}, {@link https://docs.base44.com/Integrations/linkedin-connector#linkedin-scopes-and-permissions | LinkedIn}, {@link https://docs.base44.com/Integrations/slack-connector#slack-scopes-and-permissions | Slack}.
  *
  * ## Authentication Modes
  *
