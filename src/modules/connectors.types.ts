@@ -14,9 +14,10 @@ export interface ConnectorIntegrationTypeRegistry {}
  * const token = connection.accessToken;
  * ```
  */
-export type ConnectorIntegrationType = keyof ConnectorIntegrationTypeRegistry extends never
-  ? string
-  : keyof ConnectorIntegrationTypeRegistry;
+export type ConnectorIntegrationType =
+  keyof ConnectorIntegrationTypeRegistry extends never
+    ? string
+    : keyof ConnectorIntegrationTypeRegistry;
 
 /**
  * Response from the connectors access token endpoint.
@@ -40,12 +41,42 @@ export interface ConnectorConnectionResponse {
 /**
  * Connectors module for managing OAuth tokens for external services.
  *
- * This module allows you to retrieve OAuth access tokens for external services that the app has connected to. Connectors are app-scoped. When an app builder connects an integration like Google Calendar or Slack, all users of the app share that same connection.
+ * This module allows you to retrieve OAuth access tokens for external services that the app has connected to. Connectors are app-scoped. When an app builder connects an integration like Google Calendar, Slack, or GitHub, all users of the app share that same connection.
  *
  * Unlike the integrations module that provides pre-built functions, connectors give you
  * raw OAuth tokens so you can call external service APIs directly with full control over
  * the API calls you make. This is useful when you need custom API interactions that aren't
  * covered by Base44's pre-built integrations.
+ *
+ * ## Available connectors
+ *
+ * All connectors work through [`getAccessToken()`](#getaccesstoken). Pass the integration type string and use the returned OAuth token to call the external service's API directly.
+ *
+ * | Service | Type identifier |
+ * |---|---|
+ * | Discord | `discord` |
+ * | GitHub | `github` |
+ * | Gmail | `gmail` |
+ * | Google BigQuery | `googlebigquery` |
+ * | Google Calendar | `googlecalendar` |
+ * | Google Docs | `googledocs` |
+ * | Google Drive | `googledrive` |
+ * | Google Sheets | `googlesheets` |
+ * | Google Slides | `googleslides` |
+ * | HubSpot | `hubspot` |
+ * | LinkedIn | `linkedin` |
+ * | Notion | `notion` |
+ * | Salesforce | `salesforce` |
+ * | Slack User | `slack` |
+ * | Slack Bot | `slackbot` |
+ * | TikTok | `tiktok` |
+ *
+ * ### Slack User vs Slack Bot
+ *
+ * Base44 provides two separate Slack connectors with different OAuth flows:
+ *
+ * - **`slack`** (Slack User): Uses a user token. API calls act as the connected Slack user. Requests user-level scopes such as reading conversations and searching message history. Some organizations restrict user-scope Slack apps.
+ * - **`slackbot`** (Slack Bot): Uses a bot token. API calls act as a bot with a customizable display name and icon. Requests bot-level scopes, which are more commonly allowed by organizations with stricter security policies. The bot can post to public channels without being invited and supports custom branding per message.
  *
  * ## Authentication Modes
  *
@@ -65,7 +96,7 @@ export interface ConnectorsModule {
    * has connected to. This token represents the connected app builder's account
    * and can be used to make authenticated API calls to that external service on behalf of the app.
    *
-   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
+   * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, `'slackbot'`, `'github'`, or `'discord'`.
    * @returns Promise resolving to the access token string.
    *
    * @example
@@ -87,8 +118,8 @@ export interface ConnectorsModule {
    *
    * @example
    * ```typescript
-   * // Slack connection
-   * // Get Slack OAuth token and list channels
+   * // Slack User connection
+   * // Get Slack user token and list channels
    * const slackToken = await base44.asServiceRole.connectors.getAccessToken('slack');
    *
    * // List all public and private channels
@@ -99,6 +130,29 @@ export interface ConnectorsModule {
    * });
    *
    * const data = await slackResponse.json();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Slack Bot connection
+   * // Get Slack bot token and post a message with a custom bot identity
+   * const botToken = await base44.asServiceRole.connectors.getAccessToken('slackbot');
+   *
+   * const response = await fetch('https://slack.com/api/chat.postMessage', {
+   *   method: 'POST',
+   *   headers: {
+   *     'Authorization': `Bearer ${botToken}`,
+   *     'Content-Type': 'application/json'
+   *   },
+   *   body: JSON.stringify({
+   *     channel: '#alerts',
+   *     text: 'Deployment to production completed successfully.',
+   *     username: 'Deploy Bot',
+   *     icon_emoji: ':rocket:'
+   *   })
+   * });
+   *
+   * const result = await response.json();
    * ```
    */
   getAccessToken(integrationType: ConnectorIntegrationType): Promise<string>;

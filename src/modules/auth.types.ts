@@ -195,13 +195,12 @@ export interface AuthModule {
    * Initiates an OAuth login flow with one of the built-in providers. Requires a browser environment and can't be used in the backend.
    *
    * Supported providers:
-   * - `'google'` - {@link https://developers.google.com/identity/protocols/oauth2 | Google OAuth}. Enabled by default.
-   * - `'microsoft'` - {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable Microsoft in your app's authentication settings before specifying this provider.
-   * - `'facebook'` - {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable Facebook in your app's authentication settings before using.
-   * - `'apple'` - {@link https://developer.apple.com/sign-in-with-apple/ | Sign in with Apple}. Enable Apple in your app's authentication settings before using this provider.
-   * - `'sso'` - Enterprise SSO. Enable SSO in your app's authentication settings before using this provider.
+   * - `'google'`: {@link https://developers.google.com/identity/protocols/oauth2 | Google OAuth}. Enabled by default.
+   * - `'microsoft'`: {@link https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow | Microsoft OAuth}. Enable Microsoft in your app's authentication settings before specifying this provider.
+   * - `'facebook'`: {@link https://developers.facebook.com/docs/facebook-login | Facebook Login}. Enable Facebook in your app's authentication settings before using.
+   * - `'apple'`: {@link https://developer.apple.com/sign-in-with-apple/ | Sign in with Apple}. Enable Apple in your app's authentication settings before using this provider.
    *
-   * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, `'facebook'`, `'apple'`, or `'sso'`.
+   * @param provider - The authentication provider to use: `'google'`, `'microsoft'`, `'facebook'`, or `'apple'`.
    * @param fromUrl - URL to redirect to after successful authentication. Defaults to `'/'`.
    *
    * @example
@@ -222,11 +221,6 @@ export interface AuthModule {
    * base44.auth.loginWithProvider('apple', '/dashboard');
    * ```
    *
-   * @example
-   * ```typescript
-   * // SSO
-   * base44.auth.loginWithProvider('sso', '/dashboard');
-   * ```
    */
   loginWithProvider(provider: string, fromUrl?: string): void;
 

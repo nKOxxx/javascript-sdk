@@ -1286,6 +1286,11 @@ function groupTypeDefinitions(content) {
   
   // Define type definition patterns for different modules
   const typeGroups = [
+    // Connectors module
+    {
+      types: ["ConnectorIntegrationType", "ConnectorIntegrationTypeRegistry"],
+      indicator: "ConnectorIntegrationType"
+    },
     // Entities module
     {
       types: ["EntityRecord", "EntityTypeRegistry", "SortField"],
