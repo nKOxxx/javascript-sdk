@@ -71,7 +71,10 @@ export interface ConnectorConnectionResponse {
  * | Slack Bot | `slackbot` |
  * | TikTok | `tiktok` |
  *
- * For available scopes, see the permissions reference for each service: {@link https://docs.base44.com/Integrations/gmail-connector#gmail-scopes-and-permissions | Gmail}, {@link https://docs.base44.com/Integrations/linkedin-connector#linkedin-scopes-and-permissions | LinkedIn}, {@link https://docs.base44.com/Integrations/slack-connector#slack-scopes-and-permissions | Slack}. For an explanation of the difference between `slack` and `slackbot`, see {@link https://docs.base44.com/Integrations/slack-connector#about-the-slack-connectors | About the Slack connectors}.
+ * See the integration guides for more details:
+ *
+ * - **Scopes and permissions**: {@link https://docs.base44.com/Integrations/gmail-connector#gmail-scopes-and-permissions | Gmail}, {@link https://docs.base44.com/Integrations/linkedin-connector#linkedin-scopes-and-permissions | LinkedIn}, {@link https://docs.base44.com/Integrations/slack-connector#slack-scopes-and-permissions | Slack}
+ * - **Slack connector types**: {@link https://docs.base44.com/Integrations/slack-connector#about-the-slack-connectors | About the Slack connectors} explains the difference between `slack` and `slackbot`
  *
  * ## Authentication Modes
  *
