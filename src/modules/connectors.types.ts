@@ -29,7 +29,7 @@ export interface ConnectorAccessTokenResponse {
 }
 
 /**
- * Camel-cased connection details returned by {@linkcode ConnectorsModule.getConnection | getConnection()}.
+ * Connection details.
  */
 export interface ConnectorConnectionResponse {
   /** The OAuth access token for the external service. */
@@ -50,7 +50,7 @@ export interface ConnectorConnectionResponse {
  *
  * ## Available connectors
  *
- * All connectors work through [`getAccessToken()`](#getaccesstoken). Pass the integration type string and use the returned OAuth token to call the external service's API directly.
+ * All connectors work through [`getConnection()`](#getconnection). Pass the integration type string and use the returned OAuth token to call the external service's API directly.
  *
  * | Service | Type identifier |
  * |---|---|
@@ -88,7 +88,7 @@ export interface ConnectorsModule {
   /**
    * Retrieves an OAuth access token for a specific [external integration type](#available-connectors).
    *
-   * @deprecated Use {@link getConnection} and use the returned `accessToken` (and `connectionConfig` when needed) instead.
+   * @deprecated Use {@link getConnection} instead.
    *
    * Returns the OAuth token string for an external service that an app builder
    * has connected to. This token represents the connected app builder's account
@@ -159,37 +159,63 @@ export interface ConnectorsModule {
    * Retrieves the OAuth access token and connection configuration for a specific external integration type.
    *
    * Returns both the OAuth token and any additional connection configuration
-   * that the connector provides. This is useful when the external service requires
-   * extra parameters beyond the access token (e.g., a shop domain, account ID, or API base URL).
+   * that the connector provides. Some connectors require connection-specific
+   * parameters to build API requests. For example, a service might need a
+   * subdomain to construct the API URL (`{subdomain}.example.com`), which
+   * is available in `connectionConfig`. Most connectors only need the
+   * `accessToken`; `connectionConfig` will be `null` when there are no
+   * extra parameters.
    *
    * @param integrationType - The type of integration, such as `'googlecalendar'`, `'slack'`, or `'github'`.
    * @returns Promise resolving to a {@link ConnectorConnectionResponse} with `accessToken` and `connectionConfig`.
    *
    * @example
    * ```typescript
-   * // Basic usage
-   * const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
-   * console.log(connection.accessToken);
-   * console.log(connection.connectionConfig);
+   * // Google Calendar connection
+   * // Get Google Calendar OAuth token and fetch upcoming events
+   * const { accessToken } = await base44.asServiceRole.connectors.getConnection('googlecalendar');
+   *
+   * const timeMin = new Date().toISOString();
+   * const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true&timeMin=${timeMin}`;
+   *
+   * const calendarResponse = await fetch(url, {
+   *   headers: { Authorization: `Bearer ${accessToken}` }
+   * });
+   *
+   * const events = await calendarResponse.json();
    * ```
    *
    * @example
    * ```typescript
-   * // Shopify: connectionConfig has subdomain (e.g. "my-store" for my-store.myshopify.com)
-   * const connection = await base44.asServiceRole.connectors.getConnection('shopify');
-   * const { accessToken, connectionConfig } = connection;
-   * const shop = connectionConfig?.subdomain
-   *   ? `https://${connectionConfig.subdomain}.myshopify.com`
-   *   : null;
+   * // Slack connection
+   * // Get Slack OAuth token and list channels
+   * const { accessToken } = await base44.asServiceRole.connectors.getConnection('slack');
    *
-   * if (shop) {
-   *   const response = await fetch(
-   *     `${shop}/admin/api/2024-01/products.json?limit=10`,
-   *     { headers: { 'X-Shopify-Access-Token': accessToken } }
-   *   );
-   *   const { products } = await response.json();
-   * }
+   * const url = 'https://slack.com/api/conversations.list?types=public_channel,private_channel&limit=100';
+   *
+   * const slackResponse = await fetch(url, {
+   *   headers: { Authorization: `Bearer ${accessToken}` }
+   * });
+   *
+   * const data = await slackResponse.json();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Using connectionConfig
+   * // Some connectors return a subdomain or other params needed to build the API URL
+   * const { accessToken, connectionConfig } = await base44.asServiceRole.connectors.getConnection('myservice');
+   *
+   * const subdomain = connectionConfig?.subdomain;
+   * const response = await fetch(
+   *   `https://${subdomain}.example.com/api/v1/resources`,
+   *   { headers: { Authorization: `Bearer ${accessToken}` } }
+   * );
+   *
+   * const data = await response.json();
    * ```
    */
-  getConnection(integrationType: ConnectorIntegrationType): Promise<ConnectorConnectionResponse>;
+  getConnection(
+    integrationType: ConnectorIntegrationType,
+  ): Promise<ConnectorConnectionResponse>;
 }

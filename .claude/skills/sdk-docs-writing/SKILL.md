@@ -174,6 +174,7 @@ const records = await base44.entities.MyEntity.list();
 - **Avoid gerunds** in section headings within JSDoc. Prefer imperatives or noun phrases.
 - **State environment constraints** when a method is browser-only: "Requires a browser environment and can't be used in the backend."
 - **Document side effects** explicitly (e.g., "automatically sets the token for subsequent requests").
+- **Link method references.** When mentioning another SDK method or module by name in JSDoc prose, always use `{@link}` or `{@linkcode}` to create a cross-reference. Never leave a method name as plain text when a link target exists.
 
 ## Doc generation pipeline
 
