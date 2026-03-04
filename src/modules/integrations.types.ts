@@ -23,7 +23,7 @@ export type IntegrationEndpointFunction = (
  * ```typescript
  * await base44.integrations.Core.InvokeLLM({
  *   prompt: 'Explain quantum computing',
- *   model: 'gpt-4'
+ *   model: 'gpt_5'
  * });
  * ```
  *
@@ -398,7 +398,7 @@ export type IntegrationsModule = {
    * ```typescript
    * const response = await base44.integrations.Core.InvokeLLM({
    *   prompt: 'Explain quantum computing',
-   *   model: 'gpt-4'
+   *   model: 'gpt_5'
    * });
    * ```
    */
@@ -428,7 +428,7 @@ export type IntegrationsModule = {
    * ```typescript
    * const response = await base44.integrations.Core.InvokeLLM({
    *   prompt: 'Explain quantum computing',
-   *   model: 'gpt-4'
+   *   model: 'gpt_5'
    * });
    * ```
    *
